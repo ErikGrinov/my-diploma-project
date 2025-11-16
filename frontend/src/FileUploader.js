@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios'; // Імпортуємо axios
 
-function FileUploader() {
+function FileUploader({ onUploadSuccess }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [message, setMessage] = useState(''); // Для сповіщень
   const [insights, setInsights] = useState([]);
@@ -11,6 +11,7 @@ function FileUploader() {
     setSelectedFile(event.target.files[0]);
     setMessage('');
     setInsights([]);
+    
   };
 
   // Обробник завантаження файлу
@@ -39,6 +40,9 @@ function FileUploader() {
 
       // Зберігаємо інсайти, які прийшли з бекенду
       setInsights(response.data.insights || []);
+      if (onUploadSuccess) {
+    onUploadSuccess(); // Посилаємо сигнал "Я закінчив!"
+  }
     })
     .catch((error) => {
       // Помилка
