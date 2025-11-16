@@ -8,7 +8,7 @@ import tableauserverclient as TSC  # <-- НОВА БІБЛІОТЕКА
 # --- Налаштування Сервера ---
 app = Flask(__name__)
 # Автоматично бере URL вашого Vercel з Render Environment
-CORS(app, resources={r"/api/*": {"origins": os.environ.get("VERCEL_URL", "http://localhost:3000")}})
+CORS(app, resources={r"/api/*": {"origins": "https://my-diploma-project.vercel.app"}})
 
 # --- Наша Стандартна Модель Даних ---
 STANDARD_COLUMNS = {
