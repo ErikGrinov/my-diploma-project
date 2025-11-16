@@ -1,0 +1,151 @@
+Дата_Замовлення,Transaction_ID,Назва_Продукту,Product_Category,Quantity,Ціна_за_од,Cost_Per_Unit,Manager_Name,Client_Region,Оцінка_Клієнта
+2025-10-11,T0001,Small Rug,Home Goods,3,436.04,265.0,Sydorenko,Kharkiv,4
+2025-10-20,T0002,Monitor 4K,Electronics,6,305.64,222.84,Kovalenko,Odesa,4
+2025-10-17,T0003,Smartphone S,Electronics,5,2667.28,1540.57,Kovalenko,Lviv,5
+2025-10-03,T0004,T-shirt Basic,Apparel,1,2895.32,1748.32,Sydorenko,Kyiv,5
+2025-10-12,T0005,Headphones Pro,Electronics,5,417.04,209.61,Sydorenko,Odesa,3
+2025-10-06,T0006,Sweater Wool,Apparel,2,2440.65,1311.73,Petrenko,Kyiv,5
+2025-10-19,T0007,Kitchen Set,Home Goods,5,2905.15,1648.13,Petrenko,Odesa,3
+2025-10-17,T0008,Kitchen Set,Home Goods,9,2880.01,1648.45,Sydorenko,Kharkiv,5
+2025-10-19,T0009,Sweater Wool,Apparel,6,2020.97,1115.78,Sydorenko,Odesa,3
+2025-10-11,T0010,Running Shoes,Apparel,9,2137.89,1236.28,Petrenko,Kharkiv,4
+2025-10-16,T0011,Pillow Standard,Home Goods,1,1955.0,1368.3,Sydorenko,Odesa,3
+2025-10-15,T0012,Monitor 4K,Electronics,6,772.0,570.76,Sydorenko,Kyiv,4
+2025-10-16,T0013,Monitor 4K,Electronics,10,686.46,441.17,Petrenko,Kharkiv,3
+2025-10-09,T0014,Table Lamp,Home Goods,8,2159.81,1224.79,Kovalenko,Lviv,3
+2025-10-09,T0015,Small Rug,Home Goods,6,1993.6,1115.95,Sydorenko,Lviv,4
+2025-10-17,T0016,Monitor 4K,Electronics,10,1050.01,713.99,Kovalenko,Lviv,4
+2025-10-14,T0017,Sweater Wool,Apparel,5,2617.04,1537.9,Ivanenko,Kharkiv,3
+2025-10-01,T0018,T-shirt Basic,Apparel,9,2480.16,1596.21,Kovalenko,Lviv,4
+2025-10-21,T0019,Pillow Standard,Home Goods,2,2878.48,1675.19,Kovalenko,Odesa,5
+2025-10-20,T0020,Wireless Mouse,Electronics,4,1001.65,736.5,Kovalenko,Lviv,4
+2025-10-18,T0021,Jeans Premium,Apparel,5,109.59,85.19,Ivanenko,Kyiv,3
+2025-10-08,T0022,Sweater Wool,Apparel,7,753.65,474.89,Petrenko,Odesa,3
+2025-10-17,T0023,Pillow Standard,Home Goods,7,1622.67,1041.57,Sydorenko,Odesa,4
+2025-10-04,T0024,Table Lamp,Home Goods,3,2568.25,1914.48,Kovalenko,Odesa,5
+2025-10-11,T0025,Small Rug,Home Goods,7,2723.67,1640.48,Ivanenko,Kharkiv,3
+2025-10-19,T0026,Headphones Pro,Electronics,8,647.26,329.21,Petrenko,Kharkiv,5
+2025-10-14,T0027,Laptop Model X,Electronics,8,1546.43,946.88,Kovalenko,Odesa,5
+2025-10-14,T0028,Kitchen Set,Home Goods,6,1555.56,1065.12,Kovalenko,Odesa,5
+2025-10-04,T0029,Wireless Mouse,Electronics,6,1538.99,962.22,Sydorenko,Kharkiv,5
+2025-10-11,T0030,T-shirt Basic,Apparel,1,2750.21,1731.05,Petrenko,Odesa,3
+2025-10-18,T0031,Small Rug,Home Goods,1,2657.69,1493.62,Ivanenko,Kyiv,4
+2025-10-21,T0032,Headphones Pro,Electronics,3,187.7,103.69,Ivanenko,Odesa,3
+2025-10-04,T0033,Sweater Wool,Apparel,4,1710.5,1063.53,Petrenko,Odesa,4
+2025-10-09,T0034,Laptop Model X,Electronics,1,2660.44,1685.92,Kovalenko,Odesa,3
+2025-10-02,T0035,Pillow Standard,Home Goods,1,1219.41,658.77,Kovalenko,Kyiv,5
+2025-10-13,T0036,Pillow Standard,Home Goods,2,1171.83,748.49,Petrenko,Kyiv,4
+2025-10-19,T0037,Pillow Standard,Home Goods,10,1220.63,765.76,Ivanenko,Odesa,3
+2025-10-12,T0038,Monitor 4K,Electronics,2,2962.91,2305.4,Kovalenko,Odesa,5
+2025-10-17,T0039,Kitchen Set,Home Goods,10,1012.34,693.97,Kovalenko,Odesa,5
+2025-10-15,T0040,Small Rug,Home Goods,9,2230.38,1686.52,Sydorenko,Kyiv,4
+2025-10-17,T0041,Running Shoes,Apparel,7,1663.72,921.58,Ivanenko,Odesa,5
+2025-10-21,T0042,Jeans Premium,Apparel,3,748.64,399.15,Ivanenko,Odesa,5
+2025-10-04,T0043,Dress Summer,Apparel,1,1561.87,888.94,Petrenko,Odesa,4
+2025-10-07,T0044,Table Lamp,Home Goods,8,1056.45,599.84,Petrenko,Odesa,4
+2025-10-14,T0045,Small Rug,Home Goods,8,1897.24,1148.8,Petrenko,Kyiv,5
+2025-10-16,T0046,Dress Summer,Apparel,8,2226.19,1591.52,Kovalenko,Odesa,3
+2025-10-02,T0047,Small Rug,Home Goods,8,426.45,243.34,Ivanenko,Kharkiv,3
+2025-10-20,T0048,Laptop Model X,Electronics,4,2825.31,1731.63,Ivanenko,Odesa,5
+2025-10-06,T0049,Smartwatch Z,Electronics,9,1495.64,808.33,Ivanenko,Kyiv,5
+2025-10-17,T0050,Headphones Pro,Electronics,9,1455.23,1070.87,Kovalenko,Lviv,5
+2025-10-05,T0051,Jeans Premium,Apparel,8,858.45,623.42,Ivanenko,Kharkiv,3
+2025-10-17,T0052,Jeans Premium,Apparel,7,1369.75,719.09,Ivanenko,Kharkiv,5
+2025-10-07,T0053,Smartphone S,Electronics,8,2002.51,1484.72,Kovalenko,Lviv,5
+2025-10-18,T0054,T-shirt Basic,Apparel,4,2858.16,1700.42,Petrenko,Kyiv,4
+2025-10-06,T0055,Pillow Standard,Home Goods,6,819.29,542.02,Sydorenko,Kyiv,3
+2025-10-21,T0056,Pillow Standard,Home Goods,4,2627.37,1451.26,Kovalenko,Lviv,4
+2025-10-11,T0057,Small Rug,Home Goods,8,1394.04,1044.21,Ivanenko,Kyiv,5
+2025-10-01,T0058,Jeans Premium,Apparel,4,2664.33,1379.1,Sydorenko,Lviv,4
+2025-10-08,T0059,T-shirt Basic,Apparel,10,1909.4,1122.71,Kovalenko,Kharkiv,3
+2025-10-05,T0060,Headphones Pro,Electronics,4,517.53,273.46,Kovalenko,Kyiv,4
+2025-10-15,T0061,Laptop Model X,Electronics,3,762.25,390.26,Petrenko,Kharkiv,4
+2025-10-02,T0062,Jeans Premium,Apparel,7,2103.14,1065.12,Petrenko,Odesa,3
+2025-10-17,T0063,Kitchen Set,Home Goods,5,335.39,192.1,Petrenko,Odesa,5
+2025-10-15,T0064,Table Lamp,Home Goods,2,1183.35,877.83,Kovalenko,Kharkiv,3
+2025-10-19,T0065,Monitor 4K,Electronics,5,2673.45,1451.81,Petrenko,Kyiv,5
+2025-10-17,T0066,Small Rug,Home Goods,3,2743.69,1848.14,Sydorenko,Odesa,5
+2025-10-17,T0067,Table Lamp,Home Goods,9,527.43,382.7,Kovalenko,Lviv,5
+2025-10-09,T0068,Laptop Model X,Electronics,10,2055.66,1196.04,Ivanenko,Kharkiv,4
+2025-10-07,T0069,Table Lamp,Home Goods,7,2871.57,1692.91,Sydorenko,Lviv,4
+2025-10-09,T0070,Sweater Wool,Apparel,6,2278.92,1496.75,Kovalenko,Kharkiv,3
+2025-10-13,T0071,Table Lamp,Home Goods,9,1365.38,824.93,Petrenko,Kyiv,3
+2025-10-01,T0072,Sweater Wool,Apparel,4,2892.03,2038.05,Petrenko,Kharkiv,5
+2025-10-20,T0073,Jeans Premium,Apparel,9,831.5,440.7,Sydorenko,Kyiv,3
+2025-10-02,T0074,Pillow Standard,Home Goods,4,124.98,90.31,Ivanenko,Kyiv,3
+2025-10-21,T0075,Small Rug,Home Goods,10,2932.95,1522.45,Kovalenko,Kyiv,4
+2025-10-16,T0076,Smartwatch Z,Electronics,7,967.27,537.83,Ivanenko,Kharkiv,4
+2025-10-12,T0077,Pillow Standard,Home Goods,1,252.3,184.93,Ivanenko,Kharkiv,3
+2025-10-09,T0078,Table Lamp,Home Goods,7,2468.87,1391.04,Kovalenko,Kharkiv,5
+2025-10-04,T0079,Sweater Wool,Apparel,10,36.54,19.16,Kovalenko,Lviv,3
+2025-10-10,T0080,Jeans Premium,Apparel,9,2889.59,2139.16,Kovalenko,Kyiv,5
+2025-10-12,T0081,Dress Summer,Apparel,2,937.37,688.68,Kovalenko,Kharkiv,3
+2025-10-21,T0082,T-shirt Basic,Apparel,10,1089.41,717.7,Kovalenko,Lviv,3
+2025-10-03,T0083,Sweater Wool,Apparel,7,226.76,146.5,Kovalenko,Kyiv,5
+2025-10-08,T0084,Monitor 4K,Electronics,9,2558.7,1334.86,Ivanenko,Kyiv,4
+2025-10-15,T0085,Table Lamp,Home Goods,9,1232.45,676.69,Kovalenko,Kharkiv,4
+2025-10-02,T0086,Jeans Premium,Apparel,4,664.24,356.5,Sydorenko,Odesa,4
+2025-10-02,T0087,Kitchen Set,Home Goods,4,225.29,122.96,Sydorenko,Lviv,4
+2025-10-01,T0088,Table Lamp,Home Goods,7,1123.2,817.79,Kovalenko,Kyiv,5
+2025-10-18,T0089,Smartphone S,Electronics,5,2012.31,1510.21,Kovalenko,Kyiv,4
+2025-10-09,T0090,Dress Summer,Apparel,10,1070.83,764.51,Sydorenko,Kharkiv,4
+2025-10-18,T0091,Smartwatch Z,Electronics,10,2425.13,1601.41,Sydorenko,Lviv,4
+2025-10-09,T0092,Dress Summer,Apparel,5,1756.81,1118.86,Sydorenko,Lviv,3
+2025-10-05,T0093,Table Lamp,Home Goods,1,906.17,579.71,Sydorenko,Lviv,5
+2025-10-04,T0094,Laptop Model X,Electronics,2,2393.92,1437.24,Kovalenko,Odesa,4
+2025-10-19,T0095,Laptop Model X,Electronics,9,1547.61,1037.84,Petrenko,Kharkiv,4
+2025-10-21,T0096,Dress Summer,Apparel,6,369.77,199.05,Sydorenko,Odesa,3
+2025-10-20,T0097,Smartphone S,Electronics,2,647.86,483.47,Petrenko,Kharkiv,5
+2025-10-21,T0098,Running Shoes,Apparel,10,657.81,358.72,Kovalenko,Odesa,5
+2025-10-18,T0099,Smartphone S,Electronics,9,2461.45,1692.83,Kovalenko,Odesa,4
+2025-10-16,T0100,T-shirt Basic,Apparel,5,1269.89,671.78,Kovalenko,Lviv,4
+2025-10-04,T0101,Small Rug,Home Goods,7,1163.06,715.86,Petrenko,Kyiv,3
+2025-10-04,T0102,Headphones Pro,Electronics,10,2883.47,1553.91,Ivanenko,Kharkiv,4
+2025-10-07,T0103,T-shirt Basic,Apparel,10,2367.46,1875.32,Sydorenko,Lviv,5
+2025-10-04,T0104,Sweater Wool,Apparel,8,261.3,161.37,Sydorenko,Kharkiv,5
+2025-10-03,T0105,Sweater Wool,Apparel,8,1677.07,1279.24,Petrenko,Lviv,3
+2025-10-05,T0106,Table Lamp,Home Goods,2,1671.43,1237.86,Kovalenko,Odesa,5
+2025-10-17,T0107,Jeans Premium,Apparel,6,838.19,648.18,Ivanenko,Kyiv,5
+2025-10-06,T0108,Pillow Standard,Home Goods,10,2412.64,1801.59,Ivanenko,Kharkiv,5
+2025-10-08,T0109,Headphones Pro,Electronics,10,2767.11,2156.54,Ivanenko,Kharkiv,5
+2025-10-20,T0110,Laptop Model X,Electronics,10,671.88,406.83,Petrenko,Kyiv,5
+2025-10-08,T0111,Headphones Pro,Electronics,3,2354.63,1556.53,Sydorenko,Odesa,3
+2025-10-03,T0112,Smartwatch Z,Electronics,6,2278.0,1683.13,Petrenko,Kyiv,5
+2025-10-21,T0113,Laptop Model X,Electronics,4,934.4,524.07,Sydorenko,Odesa,4
+2025-10-02,T0114,Laptop Model X,Electronics,7,1766.29,1056.21,Ivanenko,Odesa,5
+2025-10-19,T0115,Sweater Wool,Apparel,8,1128.45,635.32,Sydorenko,Kyiv,5
+2025-10-02,T0116,Smartwatch Z,Electronics,6,1911.04,1359.55,Petrenko,Kharkiv,5
+2025-10-01,T0117,Pillow Standard,Home Goods,6,726.89,385.51,Ivanenko,Kharkiv,5
+2025-10-04,T0118,Running Shoes,Apparel,9,1948.12,1024.69,Kovalenko,Lviv,4
+2025-10-11,T0119,Headphones Pro,Electronics,8,298.35,202.85,Kovalenko,Odesa,5
+2025-10-21,T0120,Laptop Model X,Electronics,9,2498.23,1312.17,Sydorenko,Kharkiv,3
+2025-10-08,T0121,Laptop Model X,Electronics,1,2925.31,1942.7,Ivanenko,Kharkiv,5
+2025-10-16,T0122,Small Rug,Home Goods,10,2147.6,1427.64,Sydorenko,Kharkiv,5
+2025-10-14,T0123,Monitor 4K,Electronics,2,470.7,299.75,Sydorenko,Kharkiv,5
+2025-10-15,T0124,Smartwatch Z,Electronics,2,949.84,602.55,Petrenko,Odesa,3
+2025-10-07,T0125,Smartwatch Z,Electronics,1,2751.68,1792.42,Petrenko,Lviv,3
+2025-10-04,T0126,Sweater Wool,Apparel,10,2678.57,1689.93,Petrenko,Kharkiv,3
+2025-10-17,T0127,Table Lamp,Home Goods,9,2009.35,1227.94,Petrenko,Kyiv,3
+2025-10-11,T0128,Kitchen Set,Home Goods,4,430.5,232.51,Ivanenko,Lviv,4
+2025-10-09,T0129,Small Rug,Home Goods,5,1445.08,934.49,Petrenko,Lviv,3
+2025-10-05,T0130,T-shirt Basic,Apparel,7,1897.73,1176.99,Kovalenko,Kharkiv,3
+2025-10-04,T0131,Monitor 4K,Electronics,8,2039.28,1061.35,Ivanenko,Kyiv,3
+2025-10-10,T0132,Pillow Standard,Home Goods,6,2425.93,1617.71,Sydorenko,Lviv,3
+2025-10-12,T0133,Sweater Wool,Apparel,6,2549.69,1439.83,Petrenko,Odesa,3
+2025-10-17,T0134,Monitor 4K,Electronics,10,1252.08,773.88,Ivanenko,Odesa,4
+2025-10-17,T0135,Running Shoes,Apparel,6,655.29,459.23,Ivanenko,Kharkiv,5
+2025-10-15,T0136,Headphones Pro,Electronics,10,942.68,746.29,Kovalenko,Odesa,5
+2025-10-03,T0137,Laptop Model X,Electronics,6,2957.27,1650.76,Sydorenko,Kyiv,3
+2025-10-11,T0138,Running Shoes,Apparel,5,2957.15,1948.15,Petrenko,Odesa,4
+2025-10-05,T0139,Kitchen Set,Home Goods,9,362.76,215.68,Sydorenko,Kharkiv,3
+2025-10-06,T0140,Dress Summer,Apparel,8,175.87,107.89,Ivanenko,Lviv,3
+2025-10-18,T0141,Dress Summer,Apparel,10,525.14,270.67,Petrenko,Kyiv,4
+2025-10-06,T0142,Pillow Standard,Home Goods,6,627.98,397.69,Sydorenko,Odesa,5
+2025-10-13,T0143,Running Shoes,Apparel,4,2834.91,1689.63,Ivanenko,Kyiv,3
+2025-10-12,T0144,Kitchen Set,Home Goods,7,865.97,546.14,Petrenko,Kyiv,3
+2025-10-20,T0145,Laptop Model X,Electronics,10,1627.21,1026.86,Petrenko,Odesa,5
+2025-10-03,T0146,Table Lamp,Home Goods,1,562.67,327.98,Kovalenko,Kharkiv,3
+2025-10-05,T0147,Jeans Premium,Apparel,6,1914.52,1056.68,Sydorenko,Kharkiv,4
+2025-10-16,T0148,Pillow Standard,Home Goods,5,2712.69,2158.76,Sydorenko,Kyiv,3
+2025-10-10,T0149,Small Rug,Home Goods,7,248.53,172.26,Petrenko,Kyiv,5
+2025-10-01,T0150,Monitor 4K,Electronics,7,287.47,161.37,Kovalenko,Kharkiv,3

@@ -1,0 +1,104 @@
+Transaction_Date,Transaction_ID,Product_Category,Quantity,Price_Per_Unit,Client_Region,Revenue
+2025-11-10,B-001,Electronics,1,1200,Kyiv,1200
+2025-11-10,B-002,Apparel,3,50,Lviv,150
+2025-11-11,B-003,Home Goods,5,15,Odesa,75
+2025-11-20,B-004,Electronics,5,182,Kharkiv,910
+2025-11-12,B-005,Apparel,6,1082,Kharkiv,6492
+2025-11-19,B-006,Apparel,7,105,Odesa,735
+2025-11-19,B-007,Apparel,7,1784,Odesa,12488
+2025-11-17,B-008,Apparel,4,907,Lviv,3628
+2025-11-15,B-009,Home Goods,5,829,Lviv,4145
+2025-11-11,B-010,Electronics,5,264,Kharkiv,1320
+2025-11-19,B-011,Home Goods,2,1890,Odesa,3780
+2025-11-14,B-012,Apparel,1,1588,Odesa,1588
+2025-11-18,B-013,Apparel,6,182,Lviv,1092
+2025-11-18,B-014,Electronics,3,1427,Kharkiv,4281
+2025-11-20,B-015,Apparel,2,1978,Odesa,3956
+2025-11-10,B-016,Electronics,7,297,Lviv,2079
+2025-11-11,B-017,Apparel,8,1414,Lviv,11312
+2025-11-12,B-018,Apparel,5,1758,Lviv,8790
+2025-11-12,B-019,Apparel,9,1443,Lviv,12987
+2025-11-18,B-020,Electronics,5,540,Lviv,2700
+2025-11-12,B-021,Home Goods,5,1538,Kyiv,7690
+2025-11-15,B-022,Home Goods,2,28,Odesa,56
+2025-11-19,B-023,Apparel,7,1580,Kharkiv,11060
+2025-11-13,B-024,Electronics,1,1813,Odesa,1813
+2025-11-14,B-025,Home Goods,6,1256,Lviv,7536
+2025-11-12,B-026,Electronics,6,1996,Odesa,11976
+2025-11-20,B-027,Home Goods,7,1569,Odesa,10983
+2025-11-15,B-028,Home Goods,1,1033,Kharkiv,1033
+2025-11-20,B-029,Home Goods,3,974,Kharkiv,2922
+2025-11-17,B-030,Electronics,8,383,Kyiv,3064
+2025-11-10,B-031,Apparel,3,491,Kharkiv,1473
+2025-11-14,B-032,Home Goods,5,1581,Kharkiv,7905
+2025-11-16,B-033,Apparel,7,1179,Kyiv,8253
+2025-11-16,B-034,Electronics,1,1919,Kyiv,1919
+2025-11-14,B-035,Apparel,4,507,Kyiv,2028
+2025-11-17,B-036,Apparel,9,1981,Lviv,17829
+2025-11-12,B-037,Home Goods,9,1356,Odesa,12204
+2025-11-11,B-038,Apparel,8,692,Odesa,5536
+2025-11-18,B-039,Home Goods,9,756,Lviv,6804
+2025-11-16,B-040,Electronics,9,1370,Kharkiv,12330
+2025-11-13,B-041,Apparel,8,1962,Odesa,15696
+2025-11-10,B-042,Home Goods,2,785,Lviv,1570
+2025-11-13,B-043,Apparel,5,1532,Odesa,7660
+2025-11-13,B-044,Electronics,8,1280,Kyiv,10240
+2025-11-14,B-045,Electronics,9,1850,Lviv,16650
+2025-11-17,B-046,Electronics,6,855,Kharkiv,5130
+2025-11-14,B-047,Electronics,10,1117,Kharkiv,11170
+2025-11-19,B-048,Home Goods,8,141,Odesa,1128
+2025-11-10,B-049,Apparel,9,1781,Kharkiv,16029
+2025-11-13,B-050,Electronics,4,1253,Lviv,5012
+2025-11-19,B-051,Home Goods,10,1669,Kharkiv,16690
+2025-11-19,B-052,Home Goods,6,1227,Odesa,7362
+2025-11-15,B-053,Electronics,5,574,Odesa,2870
+2025-11-11,B-054,Apparel,2,1799,Kharkiv,3598
+2025-11-18,B-055,Home Goods,4,1220,Odesa,4880
+2025-11-17,B-056,Electronics,6,533,Kharkiv,3198
+2025-11-16,B-057,Electronics,7,1311,Odesa,9177
+2025-11-10,B-058,Home Goods,9,374,Kyiv,3366
+2025-11-10,B-059,Home Goods,6,980,Lviv,5880
+2025-11-10,B-060,Home Goods,9,970,Kharkiv,8730
+2025-11-19,B-061,Electronics,1,80,Kharkiv,80
+2025-11-18,B-062,Electronics,4,713,Odesa,2852
+2025-11-20,B-063,Electronics,7,24,Kharkiv,168
+2025-11-13,B-064,Apparel,6,1180,Odesa,7080
+2025-11-13,B-065,Home Goods,8,778,Kharkiv,6224
+2025-11-18,B-066,Apparel,8,345,Lviv,2760
+2025-11-12,B-067,Home Goods,4,143,Kyiv,572
+2025-11-13,B-068,Electronics,9,1525,Lviv,13725
+2025-11-11,B-069,Home Goods,9,314,Odesa,2826
+2025-11-20,B-070,Apparel,7,792,Kharkiv,5544
+2025-11-14,B-071,Home Goods,4,1900,Odesa,7600
+2025-11-12,B-072,Apparel,9,1210,Odesa,10890
+2025-11-19,B-073,Electronics,5,1140,Lviv,5700
+2025-11-11,B-074,Apparel,9,629,Odesa,5661
+2025-11-14,B-075,Home Goods,9,580,Kharkiv,5220
+2025-11-10,B-076,Home Goods,7,1005,Kyiv,7035
+2025-11-12,B-077,Home Goods,5,25,Kyiv,125
+2025-11-16,B-078,Home Goods,8,1530,Odesa,12240
+2025-11-18,B-079,Apparel,5,579,Lviv,2895
+2025-11-20,B-080,Electronics,5,1980,Kharkiv,9900
+2025-11-19,B-081,Electronics,5,250,Kyiv,1250
+2025-11-12,B-082,Apparel,6,730,Lviv,4380
+2025-11-18,B-083,Apparel,8,30,Kharkiv,240
+2025-11-19,B-084,Apparel,1,232,Odesa,232
+2025-11-19,B-085,Home Goods,5,1020,Odesa,5100
+2025-11-14,B-086,Apparel,10,1928,Kyiv,19280
+2025-11-12,B-087,Apparel,5,139,Kyiv,695
+2025-11-20,B-088,Home Goods,8,1033,Lviv,8264
+2025-11-16,B-089,Home Goods,10,802,Kharkiv,8020
+2025-11-14,B-090,Home Goods,9,328,Lviv,2952
+2025-11-15,B-091,Apparel,7,1727,Lviv,12089
+2025-11-17,B-092,Apparel,6,208,Lviv,1248
+2025-11-16,B-093,Electronics,8,1119,Odesa,8952
+2025-11-18,B-094,Apparel,9,242,Odesa,2178
+2025-11-15,B-095,Home Goods,1,44,Odesa,44
+2025-11-14,B-096,Home Goods,1,138,Lviv,138
+2025-11-12,B-097,Electronics,4,481,Kyiv,1924
+2025-11-14,B-098,Home Goods,1,1818,Odesa,1818
+2025-11-19,B-099,Apparel,4,1003,Lviv,4012
+2025-11-20,B-100,Apparel,4,1038,Odesa,4152
+2025-11-14,B-101,Home Goods,6,189,Odesa,1134
+2025-11-12,B-102,Electronics,2,1453,Odesa,2906
+2025-11-10,B-103,Home Goods,3,736,Kyiv,2208
