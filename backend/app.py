@@ -7,7 +7,7 @@ from fuzzywuzzy import fuzz, process
 # --- Налаштування Сервера ---
 app = Flask(__name__)
 # Дозволяємо запити з localhost:3000 (де буде React)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/api/*": {"origins": "http://my-diploma-project.vercel.app"}})
 
 # --- Шлях до нашого головного файлу ---
 # Цей файл Tableau буде читати (або ви будете оновлювати)
