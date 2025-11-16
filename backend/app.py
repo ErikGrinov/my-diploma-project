@@ -22,33 +22,27 @@ STANDARD_COLUMNS = {
 }
 
 
-
-# --- НОВА ВИПРАВЛЕНА ФУНКЦІЯ ДЛЯ ЗАВАНТАЖЕННЯ В TABLEAU CLOUD ---
+# --- НОВА ВЕРСІЯ ФУНКЦІЇ (З ДЕТАЛЬНИМИ ПОМИЛКАМИ) ---
 def publish_to_tableau_cloud(file_path):
     """
-    Підключається до Tableau Cloud за допомогою PAT і перезаписує
-    джерело даних 'live_sales_data'.
+    Підключається до Tableau Cloud і повертає None у разі успіху,
+    або рядок з помилкою у разі невдачі.
     """
     try:
-        # 1. Беремо секрети з Environment Variables на Render
         server_url = os.environ['TABLEAU_SERVER_URL']
         site_id = os.environ['TABLEAU_SITE_ID']
         pat_name = os.environ['TABLEAU_PAT_NAME']
         pat_secret = os.environ['TABLEAU_PAT_SECRET']
-
-        # Назва джерела даних, яке ми створили в Етапі 1
-        datasource_name_to_update = 'live_sales_data'  # <-- ПЕРЕКОНАЙСЯ, ЩО ЦЕ ІМ'Я ПРАВИЛЬНЕ
+        datasource_name_to_update = 'live_sales_data'  # Переконайся, що ім'я правильне
 
         print(f"Підключення до {server_url} на сайті {site_id}...")
 
-        # 2. Створюємо об'єкт Tableau Auth
         tableau_auth = TSC.PersonalAccessTokenAuth(pat_name, pat_secret, site_id=site_id)
         server = TSC.Server(server_url, use_server_version=True)
 
         with server.auth.sign_in(tableau_auth):
             print("Успішний вхід в Tableau Cloud.")
 
-            # 3. Знаходимо ID нашого джерела даних за ім'ям
             req_option = TSC.RequestOptions()
             req_option.filter.add(TSC.Filter(TSC.RequestOptions.Field.Name,
                                              TSC.RequestOptions.Operator.Equals,
@@ -56,27 +50,28 @@ def publish_to_tableau_cloud(file_path):
             all_datasources, _ = server.datasources.get(req_option)
 
             if not all_datasources:
-                print(f"!! Помилка: Джерело даних з ім'ям '{datasource_name_to_update}' не знайдено.")
-                return False
+                error_msg = f"Помилка: Джерело даних з ім'ям '{datasource_name_to_update}' не знайдено."
+                print(f"!! {error_msg}")
+                return error_msg
 
             datasource_to_update = all_datasources[0]
             print(f"Джерело даних знайдено (ID: {datasource_to_update.id}). Публікую нову версію...")
 
-            # 4. ПУБЛІКУЄМО (ПЕРЕЗАПИСУЄМО) ФАЙЛ
-            #
-            # *** ВИПРАВЛЕННЯ БУЛО ТУТ ***
-            # Ми маємо передати `datasource_to_update` (знайдений об'єкт),
-            # а не створювати новий.
-            #
             updated_datasource = server.datasources.publish(datasource_to_update, file_path, 'Overwrite')
 
             print(f"Джерело даних '{updated_datasource.name}' успішно оновлено.")
-            return True
+            return None  # <-- Успіх! Повертаємо None
 
+    except TSC.ServerResponseError as e:
+        # Ловимо специфічну помилку Tableau
+        error_msg = f"Помилка Tableau API: {e.summary} - {e.detail}"
+        print(f"!! {error_msg}")
+        return error_msg
     except Exception as e:
-        print(f"!! Критична помилка Tableau API: {e}")
-        return False
-
+        # Ловимо всі інші помилки
+        error_msg = f"Критична помилка Python: {str(e)}"
+        print(f"!! {error_msg}")
+        return error_msg
 
 # ... (Ваша функція `smart_column_mapping` залишається тут) ...
 def smart_column_mapping(uploaded_columns):
