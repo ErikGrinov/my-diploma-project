@@ -27,7 +27,7 @@ function FileUploader() {
     setMessage('Завантаження та обробка...');
 
     // Надсилаємо запит на наш Flask Backend (який працює на порті 5000)
-    axios.post('https://my-diploma-project.onrender.com', formData, {
+    axios.post('https://my-diploma-project.onrender.com/api/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
