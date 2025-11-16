@@ -22,7 +22,8 @@ STANDARD_COLUMNS = {
 }
 
 
-# --- НОВА ФУНКЦІЯ ДЛЯ ЗАВАНТАЖЕННЯ В TABLEAU CLOUD ---
+
+# --- НОВА ВИПРАВЛЕНА ФУНКЦІЯ ДЛЯ ЗАВАНТАЖЕННЯ В TABLEAU CLOUD ---
 def publish_to_tableau_cloud(file_path):
     """
     Підключається до Tableau Cloud за допомогою PAT і перезаписує
@@ -36,7 +37,7 @@ def publish_to_tableau_cloud(file_path):
         pat_secret = os.environ['TABLEAU_PAT_SECRET']
 
         # Назва джерела даних, яке ми створили в Етапі 1
-        datasource_name_to_update = 'live_sales_data'
+        datasource_name_to_update = 'live_sales_data'  # <-- ПЕРЕКОНАЙСЯ, ЩО ЦЕ ІМ'Я ПРАВИЛЬНЕ
 
         print(f"Підключення до {server_url} на сайті {site_id}...")
 
@@ -55,18 +56,21 @@ def publish_to_tableau_cloud(file_path):
             all_datasources, _ = server.datasources.get(req_option)
 
             if not all_datasources:
-                print(f"Помилка: Джерело даних з ім'ям '{datasource_name_to_update}' не знайдено.")
+                print(f"!! Помилка: Джерело даних з ім'ям '{datasource_name_to_update}' не знайдено.")
                 return False
 
             datasource_to_update = all_datasources[0]
             print(f"Джерело даних знайдено (ID: {datasource_to_update.id}). Публікую нову версію...")
 
-            # 4. Публікуємо (перезаписуємо) файл
-            # Ми використовуємо режим 'Overwrite', щоб замінити існуючі дані
-            new_datasource = TSC.DatasourceItem(datasource_to_update.project_id)
-            new_datasource = server.datasources.publish(new_datasource, file_path, 'Overwrite')
+            # 4. ПУБЛІКУЄМО (ПЕРЕЗАПИСУЄМО) ФАЙЛ
+            #
+            # *** ВИПРАВЛЕННЯ БУЛО ТУТ ***
+            # Ми маємо передати `datasource_to_update` (знайдений об'єкт),
+            # а не створювати новий.
+            #
+            updated_datasource = server.datasources.publish(datasource_to_update, file_path, 'Overwrite')
 
-            print(f"Джерело даних '{new_datasource.name}' успішно оновлено.")
+            print(f"Джерело даних '{updated_datasource.name}' успішно оновлено.")
             return True
 
     except Exception as e:
