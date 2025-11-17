@@ -9,10 +9,10 @@ from tableauhyperapi import TableName
 
 # --- Налаштування Сервера ---
 app = Flask(__name__)
-# Цей рядок правильний, він жорстко прописує твій Vercel URL
 CORS(app, resources={r"/api/*": {"origins": "https://my-diploma-project.vercel.app"}})
 
-# --- Стандартна Модель Даних ---
+# --- ↓↓↓ ОНОВЛЕНО ↓↓↓ ---
+# --- Стандартна Модель Даних (з Profit/Revenue) ---
 STANDARD_COLUMNS = {
     'Transaction_Date': ['дата', 'дата замовлення', 'date', 'order_date'],
     'Transaction_ID': ['id', 'номер замовлення', 'transaction id', 'order id', 'номер чека'],
@@ -21,9 +21,12 @@ STANDARD_COLUMNS = {
     'Price_Per_Unit': ['ціна', 'price', 'ціна за од'],
     'Cost_Per_Unit': ['собівартість', 'cost', 'cost per unit'],
     'Client_Region': ['регіон', 'місто', 'region', 'city', 'client region', 'регіон доставки'],
+    'Revenue': ['revenue', 'дохід', 'виручка'],  # <-- Додано
+    'Profit': ['profit', 'прибуток']  # <-- Додано
 }
 
-# --- СХЕМА ДАНИХ (Виправляє помилку "Arrow type: na") ---
+# --- ↓↓↓ ОНОВЛЕНО ↓↓↓ ---
+# --- СХЕМА ДАНИХ (з Profit/Revenue) ---
 TABLEAU_SCHEMA = {
     'Transaction_Date': 'datetime64[ns]',
     'Transaction_ID': 'object',
@@ -31,10 +34,12 @@ TABLEAU_SCHEMA = {
     'Quantity': 'Int64',
     'Price_Per_Unit': 'float64',
     'Cost_Per_Unit': 'float64',
-    'Client_Region': 'object'
+    'Client_Region': 'object',
+    'Revenue': 'float64',  # <-- Додано
+    'Profit': 'float64'  # <-- Додано
 }
 
-# --- "РОЗУМНИЙ" СЛОВНИК МАРЖІ (v2) ---
+# --- "РОЗУМНИЙ" СЛОВНИК МАРЖІ (Без змін) ---
 MARGIN_FALLBACKS_BY_CATEGORY = {
     'Electronics': 0.20,
     'Apparel': 0.40,
@@ -48,71 +53,47 @@ MARGIN_FALLBACKS_BY_CATEGORY = {
     'default': 0.30
 }
 
-# --- "РОЗУМНА" ФУНКЦІЯ ДЛЯ КАТЕГОРІЙ ---
+# --- "РОЗУМНА" ФУНКЦІЯ ДЛЯ КАТЕГОРІЙ (Без змін) ---
 CLEAN_CATEGORIES = list(MARGIN_FALLBACKS_BY_CATEGORY.keys())
 
 
 def get_smart_category(dirty_category):
-    """
-    Бере "брудну" назву категорії і знаходить найкращий збіг.
-    """
     if not isinstance(dirty_category, str):
         return 'default'
-
-    best_match, score = process.extractOne(
-        dirty_category.lower(),
-        CLEAN_CATEGORIES,
-        scorer=fuzz.token_set_ratio
-    )
-
+    best_match, score = process.extractOne(dirty_category.lower(), CLEAN_CATEGORIES, scorer=fuzz.token_set_ratio)
     if score > 60:
-        # print(f"Розумний Мапінг Категорій: '{dirty_category}' -> '{best_match}' (Схожість: {score}%)")
         return best_match
     else:
-        # print(f"Розумний Мапінг Категорій: '{dirty_category}' -> 'default' (Схожість: {score}%)")
         return 'default'
 
 
 # --- Функція Публікації (Без змін) ---
 def publish_to_tableau_cloud(file_path):
-    """
-    Підключається до Tableau Cloud і повертає None у разі успіху,
-    або рядок з помилкою у разі невдачі.
-    """
     try:
         server_url = os.environ['TABLEAU_SERVER_URL']
         site_id = os.environ['TABLEAU_SITE_ID']
         pat_name = os.environ['TABLEAU_PAT_NAME']
         pat_secret = os.environ['TABLEAU_PAT_SECRET']
         datasource_name_to_update = 'live_sales_data'
-
         print(f"Підключення до {server_url} на сайті {site_id}...")
-
         tableau_auth = TSC.PersonalAccessTokenAuth(pat_name, pat_secret, site_id=site_id)
         server = TSC.Server(server_url, use_server_version=True)
-
         with server.auth.sign_in(tableau_auth):
             print("Успішний вхід в Tableau Cloud.")
-
             req_option = TSC.RequestOptions()
             req_option.filter.add(TSC.Filter(TSC.RequestOptions.Field.Name,
                                              TSC.RequestOptions.Operator.Equals,
                                              datasource_name_to_update))
             all_datasources, _ = server.datasources.get(req_option)
-
             if not all_datasources:
                 error_msg = f"Помилка: Джерело даних з ім'ям '{datasource_name_to_update}' не знайдено."
                 print(f"!! {error_msg}")
                 return error_msg
-
             datasource_to_update = all_datasources[0]
             print(f"Джерело даних знайдено (ID: {datasource_to_update.id}). Публікую нову версію...")
-
             updated_datasource = server.datasources.publish(datasource_to_update, file_path, 'Overwrite')
-
             print(f"Джерело даних '{updated_datasource.name}' успішно оновлено.")
             return None
-
     except TSC.ServerResponseError as e:
         error_msg = f"Помилка Tableau API: {e.summary} - {e.detail}"
         print(f"!! {error_msg}")
@@ -123,12 +104,8 @@ def publish_to_tableau_cloud(file_path):
         return error_msg
 
 
-# --- ↓↓↓ ФУНКЦІЯ, ЯКОЇ НЕ ВИСТАЧАЛО ↓↓↓ ---
 # --- Функція Мапінгу (Без змін) ---
 def smart_column_mapping(uploaded_columns):
-    """
-    Бере "брудні" назви стовпців і знаходить найкращий збіг.
-    """
     mapping = {}
     all_standard_options = []
     for standard_name, variations in STANDARD_COLUMNS.items():
@@ -149,7 +126,7 @@ def smart_column_mapping(uploaded_columns):
     return mapping
 
 
-# --- ФІНАЛЬНА ВЕРСІЯ: ФУНКЦІЯ ІНСАЙТІВ (ВИКОРИСТОВУЄ get_smart_category) ---
+# --- ФІНАЛЬНА ВЕРСІЯ: ФУНКЦІЯ ІНСАЙТІВ (Без змін) ---
 def generate_insights(df):
     insights = []
     try:
@@ -160,42 +137,33 @@ def generate_insights(df):
         if 'Cost_Per_Unit' in df.columns:
             df['Cost_Per_Unit'] = pd.to_numeric(df['Cost_Per_Unit'], errors='coerce')
 
+        # --- ↓↓↓ ВАЖЛИВО: Ми розраховуємо Revenue і Profit ТУТ ---
         df['Revenue'] = df['Price_Per_Unit'] * df['Quantity']
 
         # --- 2. РОЗУМНА ІМП'ЮТАЦІЯ СОБІВАРТОСТІ (v4) ---
-
         if 'Cost_Per_Unit' in df.columns:
             nan_count = df['Cost_Per_Unit'].isnull().sum()
             total_count = len(df)
-
             if nan_count == total_count:
-                # СЦЕНАРІЙ Б: Стовпець повністю порожній.
-
                 if 'Product_Category' not in df.columns:
                     fallback_margin = MARGIN_FALLBACKS_BY_CATEGORY['default']
                     df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * (1 - fallback_margin), inplace=True)
                     insights.append(
                         f"⚠️ **Увага:** Собівартість (`Cost_Per_Unit`) ТА Категорії (`Product_Category`) відсутні. Для розрахунку прибутку була застосована **загальна теоретична маржа у {fallback_margin:.0%}**.")
                 else:
-                    # Ура! У нас є категорії. Використовуємо "РОЗУМНУ" ФУНКЦІЮ
                     print("Імп'ютація: Cost_Per_Unit повністю відсутній. Застосовую 'розумну' маржу за категоріями...")
-
                     df['Cost_Per_Unit'] = df.apply(
                         lambda row: row['Price_Per_Unit'] * (
                                     1 - MARGIN_FALLBACKS_BY_CATEGORY[get_smart_category(row['Product_Category'])]),
                         axis=1
                     )
-
                     insights.append(
                         f"⚠️ **Увага:** Собівартість (`Cost_Per_Unit`) була відсутня. Прибуток розраховано **на основі 'розумного' зіставлення категорій** (напр., 'gadgets' -> 'Electronics').")
-
             elif nan_count > 0:
-                # СЦЕНАРІЙ A: Стовпець частково порожній.
                 print("Імп'ютація: Cost_Per_Unit частково відсутній. Розраховую середню маржу...")
                 good_data = df.dropna(subset=['Cost_Per_Unit', 'Price_Per_Unit'])
                 avg_margin_ratio = (good_data['Price_Per_Unit'] - good_data['Cost_Per_Unit']).sum() / good_data[
                     'Price_Per_Unit'].sum()
-
                 if avg_margin_ratio > 0 and avg_margin_ratio < 1:
                     avg_cost_ratio = 1 - avg_margin_ratio
                     df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * avg_cost_ratio, inplace=True)
@@ -205,12 +173,16 @@ def generate_insights(df):
                     df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * (1 - 0.30), inplace=True)
                     insights.append(
                         f"⚠️ **Увага:** Не вдалося розрахувати середню маржу. Для {nan_count} транзакцій була застосована **теоретична маржа у 30%**.")
+        else:
+            # Стовпець Cost_Per_Unit навіть не існував
+            insights.append(
+                f"⚠️ **Увага:** У завантаженому файлі відсутній стовпець собівартості (`Cost_Per_Unit`). Розрахунок прибутку неможливий.")
 
         # --- 3. ПЕРЕРАХУНОК ПРИБУТКУ ПІСЛЯ ІМП'ЮТАЦІЇ ---
         if 'Cost_Per_Unit' in df.columns:
             df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
         else:
-            df['Profit'] = float('nan')  # Якщо собівартості все ще немає, робимо прибуток порожнім
+            df['Profit'] = float('nan')  # Робимо прибуток порожнім
 
         # --- 4. Продовжуємо Аналіз (з тими даними, що є) ---
         df_cleaned = df.dropna(subset=['Revenue'])
@@ -227,7 +199,6 @@ def generate_insights(df):
         if 'Product_Category' in df_cleaned.columns:
             df_cleaned['Clean_Category'] = df_cleaned['Product_Category'].apply(get_smart_category)
             category_group = df_cleaned.groupby('Clean_Category')['Revenue'].sum().sort_values(ascending=False)
-
             top_category_name = category_group.idxmax()
             top_category_revenue = category_group.max()
             insights.append(f"🏆 Топ-категорія: '{top_category_name}' з виручкою {top_category_revenue:,.2f} грн.")
@@ -257,7 +228,7 @@ def generate_insights(df):
         return [f"Не вдалося згенерувати інсайти: {e}"]
 
 
-# --- ↓↓↓ ГОЛОВНИЙ API ENDPOINT (ЯКОГО НЕ ВИСТАЧАЛО) ↓↓↓ ---
+# --- ↓↓↓ ОНОВЛЕНИЙ ГОЛОВНИЙ API ENDPOINT ↓↓↓ ---
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -269,8 +240,6 @@ def upload_file():
     if file and file.filename.endswith('.csv'):
         try:
             df = pd.read_csv(file)
-
-            # ВИКЛИКАЄМО "РОЗУМНИЙ МЕПІНГ" (який був відсутній)
             column_mapping = smart_column_mapping(df.columns.tolist())
             df.rename(columns=column_mapping, inplace=True)
 
@@ -285,17 +254,22 @@ def upload_file():
             try:
                 if 'Transaction_Date' in df_final.columns:
                     df_final['Transaction_Date'] = pd.to_datetime(df_final['Transaction_Date'], errors='coerce')
+
+                # Примітка: Ми застосовуємо 'ignore' для .astype(), тому що
+                # Revenue' та 'Profit' ще не існують. Вони будуть створені в generate_insights
                 df_final = df_final.astype(TABLEAU_SCHEMA, errors='ignore')
             except Exception as e:
                 print(f"!! Помилка при застосуванні схеми .astype(): {e}")
 
-            # 3. Генеруємо інсайти (використовуючи "розумну" імп'ютацію)
-            insights = generate_insights(df_final.copy())  # .copy() щоб уникнути помилок
+            # 3. Генеруємо інсайти ТА РОЗРАХОВУЄМО PROFIT/REVENUE
+            #    ↓↓↓ ВИДАЛЕНО .copy() ↓↓↓
+            insights = generate_insights(df_final)
 
             # 4. Зберігаємо файл ТИМЧАСОВО у .hyper форматі
             temp_file_path = os.path.join('temp_cleaned_data.hyper')
             print(f"Конвертую дані у {temp_file_path}...")
 
+            # Тепер df_final МІСТИТЬ розраховані 'Revenue' та 'Profit'
             pt.frame_to_hyper(df_final, temp_file_path, table='Extract')
 
             # 5. Викликаємо нашу функцію для завантаження в хмару
