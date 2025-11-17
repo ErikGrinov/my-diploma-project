@@ -153,68 +153,103 @@ def generate_insights(df):
 
 
 # --- ГОЛОВНИЙ API ENDPOINT ---
-@app.route('/api/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return jsonify({"error": "Файл не знайдено"}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "Файл не обрано"}), 400
+# --- ФІНАЛЬНА ФУНКЦІЯ ІНСАЙТІВ (з Імп'ютацією Собівартості) ---
+def generate_insights(df):
+    insights = []
+    try:
+        # --- 1. Підготовка даних (як і раніше) ---
+        df['Price_Per_Unit'] = pd.to_numeric(df['Price_Per_Unit'], errors='coerce')
+        df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
 
-    if file and file.filename.endswith('.csv'):
-        try:
-            df = pd.read_csv(file)
-            column_mapping = smart_column_mapping(df.columns.tolist())
-            df.rename(columns=column_mapping, inplace=True)
+        if 'Cost_Per_Unit' in df.columns:
+            df['Cost_Per_Unit'] = pd.to_numeric(df['Cost_Per_Unit'], errors='coerce')
 
-            # --- ↓↓↓ ВАЖЛИВЕ ВИПРАВЛЕННЯ: Гарантуємо, що ВСІ стовпці існують ---
+        df['Revenue'] = df['Price_Per_Unit'] * df['Quantity']
 
-            # 1. Отримуємо список ВСІХ потрібних нам ключів
-            all_standard_keys = list(STANDARD_COLUMNS.keys())
+        # --- 2. ↓↓↓ НОВА ЛОГІКА: "РОЗУМНА" ІМП'ЮТАЦІЯ СОБІВАРТОСТІ ↓↓↓ ---
+        profit_warning = None
 
-            # 2. Створюємо пустий DataFrame, який має ПРАВИЛЬНУ структуру
-            df_standard = pd.DataFrame(columns=all_standard_keys)
+        # Перевіряємо, чи є у нас стовпець (ми його створили раніше, але він може бути порожнім)
+        if 'Cost_Per_Unit' in df.columns:
+            nan_count = df['Cost_Per_Unit'].isnull().sum()
+            total_count = len(df)
 
-            # 3. Визначаємо, які з потрібних стовпців РЕАЛЬНО є у завантаженому файлі
-            final_columns = [col for col in all_standard_keys if col in df.columns]
+            if nan_count == total_count:
+                # СЦЕНАРІЙ Б: Стовпець повністю порожній. Використовуємо fallback 30% маржі.
+                fallback_margin = 0.30  # 30%
+                fallback_cost_ratio = 1 - fallback_margin  # 70%
 
-            # 4. Копіюємо дані з df у наш стандартний df.
-            #    Стовпці, яких не було (напр. Cost_Per_Unit), залишаться, але будуть порожніми (NaN).
-            df_final = pd.concat([df_standard, df[final_columns]], sort=False)
+                print("Імп'ютація: Cost_Per_Unit повністю відсутній. Застосовую fallback 70% COGS.")
+                df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * fallback_cost_ratio, inplace=True)
 
-            # --- ↑↑↑ КІНЕЦЬ ВИПРАВЛЕННЯ ---
+                insights.append(
+                    f"⚠️ **Увага:** Дані про собівартість (`Cost_Per_Unit`) були відсутні. Для розрахунку прибутку була автоматично застосована **теоретична маржа у 30%**.")
 
-            if 'Price_Per_Unit' in df_final.columns and 'Quantity' in df_final.columns:
-                insights = generate_insights(df_final)
-            else:
-                insights = ["Аналіз неможливий: відсутні стовпці 'Price_Per_Unit' або 'Quantity'."]
+            elif nan_count > 0:
+                # СЦЕНАРІЙ A: Стовпець частково порожній. Розраховуємо середню маржу з наявних даних.
+                print("Імп'ютація: Cost_Per_Unit частково відсутній. Розраховую середню маржу...")
 
-            # 1. Зберігаємо файл ТИМЧАСОВО у .hyper форматі
-            temp_file_path = os.path.join('temp_cleaned_data.hyper')
-            print(f"Конвертую дані у {temp_file_path}...")
-            pt.frame_to_hyper(df_final, temp_file_path, table='Extract')
+                # Розраховуємо маржу тільки на "хороших" рядках
+                good_data = df.dropna(subset=['Cost_Per_Unit', 'Price_Per_Unit'])
+                avg_margin_ratio = (good_data['Price_Per_Unit'] - good_data['Cost_Per_Unit']).sum() / good_data[
+                    'Price_Per_Unit'].sum()
 
-            # 2. Викликаємо нашу функцію для завантаження в хмару
-            print("Запускаю оновлення даних в Tableau Cloud...")
-            tableau_error = publish_to_tableau_cloud(temp_file_path)
+                if avg_margin_ratio > 0 and avg_margin_ratio < 1:
+                    avg_cost_ratio = 1 - avg_margin_ratio
+                    df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * avg_cost_ratio, inplace=True)
+                    insights.append(
+                        f"ℹ️ **Інформація:** {nan_count} транзакцій не мали собівартості. До них була автоматично застосована **середня розрахована маржа ({avg_margin_ratio:.1%})** з цього файлу.")
+                else:
+                    # Не змогли розрахувати середню (можливо, Price=0), використовуємо fallback
+                    df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * (1 - 0.30), inplace=True)
+                    insights.append(
+                        f"⚠️ **Увага:** Не вдалося розрахувати середню маржу. Для {nan_count} транзакцій була застосована **теоретична маржа у 30%**.")
 
-            # 3. Видаляємо тимчасовий файл
-            os.remove(temp_file_path)
+        # --- 3. ПЕРЕРАХУНОК ПРИБУТКУ ПІСЛЯ ІМП'ЮТАЦІЇ ---
+        # Тепер, коли Cost_Per_Unit заповнений, ми можемо розрахувати Прибуток для всіх
+        df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
 
-            # 4. Перевіряємо, чи є помилка
-            if tableau_error:
-                insights.append(f"ПОМИЛКА TABLEAU: {tableau_error}")
+        # --- 4. Продовжуємо Аналіз (з тими даними, що є) ---
+        df_cleaned = df.dropna(subset=['Revenue'])
+        total_revenue = df_cleaned['Revenue'].sum()
+        total_transactions = df_cleaned['Transaction_ID'].nunique()
+        insights.append(
+            f"✅ Проаналізовано {total_transactions} унікальних транзакцій на загальну суму {total_revenue:,.2f} грн.")
 
-            # 5. Повертаємо інсайти
-            return jsonify({
-                "message": "Файл успішно завантажено та відправлено в Tableau Cloud!",
-                "insights": insights
-            }), 200
+        aov = 0
+        if total_transactions > 0:
+            aov = total_revenue / total_transactions
+            insights.append(f"📈 Середній чек (AOV) у цьому наборі даних становить {aov:,.2f} грн.")
 
-        except Exception as e:
-            return jsonify({"error": f"Помилка обробки файлу: {str(e)}"}), 500
-    else:
-        return jsonify({"error": "Невірний тип файлу. Потрібен .csv"}), 400
+        if 'Product_Category' in df_cleaned.columns:
+            category_group = df_cleaned.groupby('Product_Category')['Revenue'].sum().sort_values(ascending=False)
+            top_category_name = category_group.idxmax()
+            top_category_revenue = category_group.max()
+            insights.append(f"🏆 Топ-категорія: '{top_category_name}' з виручкою {top_category_revenue:,.2f} грн.")
+
+        if 'Client_Region' in df_cleaned.columns:
+            region_group = df_cleaned.groupby('Client_Region')['Revenue'].sum().sort_values(ascending=False)
+            top_region_name = region_group.idxmax()
+            top_region_revenue = region_group.max()
+            insights.append(f"🌍 Топ-регіон: '{top_region_name}' з виручкою {top_region_revenue:,.2f} грн.")
+
+        # --- 5. Рекомендації (вони спрацюють як і раніше) ---
+        if aov > 0:
+            target_aov = aov * 1.15
+            insights.append(
+                f"💡 **Рекомендація:** Ваш середній чек {aov:,.2f} грн. Спробуйте впровадити поріг безкоштовної доставки...")  # (і т.д.)
+
+        if 'Product_Category' in df_cleaned.columns and len(category_group) > 1:
+            bottom_category_name = category_group.idxmin()
+            bottom_category_revenue = category_group.min()
+            insights.append(
+                f"📉 **Рекомендація:** Категорія '{bottom_category_name}' приносить найменше доходу ({bottom_category_revenue:,.2f} грн)...")  # (і т.д.)
+
+        return insights
+
+    except Exception as e:
+        print(f"Помилка генерації інсайтів: {e}")
+        return [f"Не вдалося згенерувати інсайти: {e}"]
 
 
 # --- Запуск сервера ---
