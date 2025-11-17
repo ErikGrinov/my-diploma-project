@@ -167,8 +167,22 @@ def upload_file():
             column_mapping = smart_column_mapping(df.columns.tolist())
             df.rename(columns=column_mapping, inplace=True)
 
-            final_columns = [col for col in STANDARD_COLUMNS.keys() if col in df.columns]
-            df_final = df[final_columns].copy()
+            # --- ↓↓↓ ВАЖЛИВЕ ВИПРАВЛЕННЯ: Гарантуємо, що ВСІ стовпці існують ---
+
+            # 1. Отримуємо список ВСІХ потрібних нам ключів
+            all_standard_keys = list(STANDARD_COLUMNS.keys())
+
+            # 2. Створюємо пустий DataFrame, який має ПРАВИЛЬНУ структуру
+            df_standard = pd.DataFrame(columns=all_standard_keys)
+
+            # 3. Визначаємо, які з потрібних стовпців РЕАЛЬНО є у завантаженому файлі
+            final_columns = [col for col in all_standard_keys if col in df.columns]
+
+            # 4. Копіюємо дані з df у наш стандартний df.
+            #    Стовпці, яких не було (напр. Cost_Per_Unit), залишаться, але будуть порожніми (NaN).
+            df_final = pd.concat([df_standard, df[final_columns]], sort=False)
+
+            # --- ↑↑↑ КІНЕЦЬ ВИПРАВЛЕННЯ ---
 
             if 'Price_Per_Unit' in df_final.columns and 'Quantity' in df_final.columns:
                 insights = generate_insights(df_final)
@@ -176,15 +190,12 @@ def upload_file():
                 insights = ["Аналіз неможливий: відсутні стовпці 'Price_Per_Unit' або 'Quantity'."]
 
             # 1. Зберігаємо файл ТИМЧАСОВО у .hyper форматі
-            temp_file_path = os.path.join('temp_cleaned_data.hyper')  # <-- Змінили .csv на .hyper
+            temp_file_path = os.path.join('temp_cleaned_data.hyper')
             print(f"Конвертую дані у {temp_file_path}...")
-
-            # 'Extract' - це стандартна назва таблиці, яку Tableau очікує.
-            pt.frame_to_hyper(df_final, temp_file_path, table='Extract')  # <-- Замінили .to_csv на pantab
+            pt.frame_to_hyper(df_final, temp_file_path, table='Extract')
 
             # 2. Викликаємо нашу функцію для завантаження в хмару
             print("Запускаю оновлення даних в Tableau Cloud...")
-            # Функція тепер повертає None або рядок з помилкою
             tableau_error = publish_to_tableau_cloud(temp_file_path)
 
             # 3. Видаляємо тимчасовий файл
@@ -192,7 +203,6 @@ def upload_file():
 
             # 4. Перевіряємо, чи є помилка
             if tableau_error:
-                # Якщо функція повернула помилку, додаємо її до "інсайтів"
                 insights.append(f"ПОМИЛКА TABLEAU: {tableau_error}")
 
             # 5. Повертаємо інсайти
