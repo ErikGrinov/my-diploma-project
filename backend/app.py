@@ -11,8 +11,7 @@ from tableauhyperapi import TableName
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "https://my-diploma-project.vercel.app"}})
 
-# --- ↓↓↓ ОНОВЛЕНО ↓↓↓ ---
-# --- Стандартна Модель Даних (з Profit/Revenue) ---
+# --- Стандартна Модель Даних ---
 STANDARD_COLUMNS = {
     'Transaction_Date': ['дата', 'дата замовлення', 'date', 'order_date'],
     'Transaction_ID': ['id', 'номер замовлення', 'transaction id', 'order id', 'номер чека'],
@@ -21,12 +20,9 @@ STANDARD_COLUMNS = {
     'Price_Per_Unit': ['ціна', 'price', 'ціна за од'],
     'Cost_Per_Unit': ['собівартість', 'cost', 'cost per unit'],
     'Client_Region': ['регіон', 'місто', 'region', 'city', 'client region', 'регіон доставки'],
-    'Revenue': ['revenue', 'дохід', 'виручка'],  # <-- Додано
-    'Profit': ['profit', 'прибуток']  # <-- Додано
 }
 
-# --- ↓↓↓ ОНОВЛЕНО ↓↓↓ ---
-# --- СХЕМА ДАНИХ (з Profit/Revenue) ---
+# --- СХЕМА ДАНИХ (БЕЗ Profit/Revenue) ---
 TABLEAU_SCHEMA = {
     'Transaction_Date': 'datetime64[ns]',
     'Transaction_ID': 'object',
@@ -34,9 +30,7 @@ TABLEAU_SCHEMA = {
     'Quantity': 'Int64',
     'Price_Per_Unit': 'float64',
     'Cost_Per_Unit': 'float64',
-    'Client_Region': 'object',
-    'Revenue': 'float64',  # <-- Додано
-    'Profit': 'float64'  # <-- Додано
+    'Client_Region': 'object'
 }
 
 # --- "РОЗУМНИЙ" СЛОВНИК МАРЖІ (Без змін) ---
@@ -67,60 +61,40 @@ def get_smart_category(dirty_category):
         return 'default'
 
 
-
-
-
-# --- ФУНКЦІЯ ПУБЛІКАЦІЇ (з Примусовим Оновленням) ---
+# --- Функція Публікації (Без змін) ---
 def publish_to_tableau_cloud(file_path):
-    """
-    Підключається до Tableau Cloud, перезаписує джерело
-    і ПРИМУСОВО його оновлює.
-    """
     try:
         server_url = os.environ['TABLEAU_SERVER_URL']
         site_id = os.environ['TABLEAU_SITE_ID']
         pat_name = os.environ['TABLEAU_PAT_NAME']
         pat_secret = os.environ['TABLEAU_PAT_SECRET']
         datasource_name_to_update = 'live_sales_data'
-
         print(f"Підключення до {server_url} на сайті {site_id}...")
-
         tableau_auth = TSC.PersonalAccessTokenAuth(pat_name, pat_secret, site_id=site_id)
         server = TSC.Server(server_url, use_server_version=True)
-
         with server.auth.sign_in(tableau_auth):
             print("Успішний вхід в Tableau Cloud.")
-
             req_option = TSC.RequestOptions()
             req_option.filter.add(TSC.Filter(TSC.RequestOptions.Field.Name,
                                              TSC.RequestOptions.Operator.Equals,
                                              datasource_name_to_update))
             all_datasources, _ = server.datasources.get(req_option)
-
             if not all_datasources:
                 error_msg = f"Помилка: Джерело даних з ім'ям '{datasource_name_to_update}' не знайдено."
                 print(f"!! {error_msg}")
                 return error_msg
-
             datasource_to_update = all_datasources[0]
             print(f"Джерело даних знайдено (ID: {datasource_to_update.id}). Публікую нову версію...")
-
-            # Крок 1: Публікуємо (перезаписуємо) файл
             updated_datasource = server.datasources.publish(datasource_to_update, file_path, 'Overwrite')
-            print(f"Джерело даних '{updated_datasource.name}' опубліковано.")
-
-            # --- ↓↓↓ ОСЬ ВИПРАВЛЕННЯ! ↓↓↓ ---
-            # Крок 2: Примусово "освіжаємо" джерело даних
+            print(f"Джерело даних '{updated_datasource.name}' успішно оновлено.")
+            # --- ↓↓↓ ПРИМУСОВЕ ОНОВЛЕННЯ (REFRESH) ↓↓↓ ---
             print("Запускаю примусове оновлення (refresh) джерела...")
             try:
                 server.datasources.refresh(datasource_to_update)
                 print("Примусове оновлення (refresh) успішно запущено.")
             except Exception as e:
                 print(f"!! Помилка під час запуску 'refresh', але це не критично: {e}")
-            # --- ↑↑↑ КІНЕЦЬ ВИПРАВЛЕННЯ ---
-
-            return None  # <-- Успіх!
-
+            return None
     except TSC.ServerResponseError as e:
         error_msg = f"Помилка Tableau API: {e.summary} - {e.detail}"
         print(f"!! {error_msg}")
@@ -129,6 +103,7 @@ def publish_to_tableau_cloud(file_path):
         error_msg = f"Критична помилка Python: {str(e)}"
         print(f"!! {error_msg}")
         return error_msg
+
 
 # --- Функція Мапінгу (Без змін) ---
 def smart_column_mapping(uploaded_columns):
@@ -152,21 +127,18 @@ def smart_column_mapping(uploaded_columns):
     return mapping
 
 
-# --- ФІНАЛЬНА ВЕРСІЯ: ФУНКЦІЯ ІНСАЙТІВ (Без змін) ---
+# --- ФУНКЦІЯ ІНСАЙТІВ (Яка НЕ розраховує Profit/Revenue самостійно) ---
 def generate_insights(df):
     insights = []
     try:
-        # --- 1. Підготовка даних (як і раніше) ---
+        # --- 1. Підготовка даних ---
         df['Price_Per_Unit'] = pd.to_numeric(df['Price_Per_Unit'], errors='coerce')
         df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
-
         if 'Cost_Per_Unit' in df.columns:
             df['Cost_Per_Unit'] = pd.to_numeric(df['Cost_Per_Unit'], errors='coerce')
 
-        # --- ↓↓↓ ВАЖЛИВО: Ми розраховуємо Revenue і Profit ТУТ ---
-        df['Revenue'] = df['Price_Per_Unit'] * df['Quantity']
-
-        # --- 2. РОЗУМНА ІМП'ЮТАЦІЯ СОБІВАРТОСТІ (v4) ---
+        # --- 2. РОЗУМНА ІМП'ЮТАЦІЯ СОБІВАРТОСТІ ---
+        # (Цей блок потрібен, щоб ЗАПОВНИТИ Cost_Per_Unit, якщо він порожній)
         if 'Cost_Per_Unit' in df.columns:
             nan_count = df['Cost_Per_Unit'].isnull().sum()
             total_count = len(df)
@@ -199,21 +171,14 @@ def generate_insights(df):
                     df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * (1 - 0.30), inplace=True)
                     insights.append(
                         f"⚠️ **Увага:** Не вдалося розрахувати середню маржу. Для {nan_count} транзакцій була застосована **теоретична маржа у 30%**.")
-        else:
-            # Стовпець Cost_Per_Unit навіть не існував
-            insights.append(
-                f"⚠️ **Увага:** У завантаженому файлі відсутній стовпець собівартості (`Cost_Per_Unit`). Розрахунок прибутку неможливий.")
 
-        # --- 3. ПЕРЕРАХУНОК ПРИБУТКУ ПІСЛЯ ІМП'ЮТАЦІЇ ---
-        if 'Cost_Per_Unit' in df.columns:
-            df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
-        else:
-            df['Profit'] = float('nan')  # Робимо прибуток порожнім
+        # --- 3. Продовжуємо Аналіз (БЕЗ розрахунку Profit/Revenue) ---
+        # (Ми розрахуємо їх у Tableau)
 
-        # --- 4. Продовжуємо Аналіз (з тими даними, що є) ---
-        df_cleaned = df.dropna(subset=['Revenue'])
-        total_revenue = df_cleaned['Revenue'].sum()
-        total_transactions = df_cleaned['Transaction_ID'].nunique()
+        # Розрахуємо Revenue тимчасово ЛИШЕ для інсайтів
+        df_temp_revenue = (df['Price_Per_Unit'] * df['Quantity'])
+        total_revenue = df_temp_revenue.sum()
+        total_transactions = df['Transaction_ID'].nunique()
         insights.append(
             f"✅ Проаналізовано {total_transactions} унікальних транзакцій на загальну суму {total_revenue:,.2f} грн.")
 
@@ -222,26 +187,26 @@ def generate_insights(df):
             aov = total_revenue / total_transactions
             insights.append(f"📈 Середній чек (AOV) у цьому наборі даних становить {aov:,.2f} грн.")
 
-        if 'Product_Category' in df_cleaned.columns:
-            df_cleaned['Clean_Category'] = df_cleaned['Product_Category'].apply(get_smart_category)
-            category_group = df_cleaned.groupby('Clean_Category')['Revenue'].sum().sort_values(ascending=False)
+        if 'Product_Category' in df.columns:
+            df['Temp_Revenue'] = df_temp_revenue  # Додаємо тимчасову виручку
+            df['Clean_Category'] = df['Product_Category'].apply(get_smart_category)
+            category_group = df.groupby('Clean_Category')['Temp_Revenue'].sum().sort_values(ascending=False)
             top_category_name = category_group.idxmax()
             top_category_revenue = category_group.max()
             insights.append(f"🏆 Топ-категорія: '{top_category_name}' з виручкою {top_category_revenue:,.2f} грн.")
 
-        if 'Client_Region' in df_cleaned.columns:
-            region_group = df_cleaned.groupby('Client_Region')['Revenue'].sum().sort_values(ascending=False)
+        if 'Client_Region' in df.columns:
+            region_group = df.groupby('Client_Region')['Temp_Revenue'].sum().sort_values(ascending=False)
             top_region_name = region_group.idxmax()
             top_region_revenue = region_group.max()
             insights.append(f"🌍 Топ-регіон: '{top_region_name}' з виручкою {top_region_revenue:,.2f} грн.")
 
-        # --- 5. Рекомендації (вони спрацюють як і раніше) ---
         if aov > 0:
             target_aov = aov * 1.15
             insights.append(
                 f"💡 **Рекомендація:** Ваш середній чек {aov:,.2f} грн. Спробуйте впровадити поріг безкоштовної доставки...")
 
-        if 'Product_Category' in df_cleaned.columns and len(category_group) > 1:
+        if 'Product_Category' in df.columns and len(category_group) > 1:
             bottom_category_name = category_group.idxmin()
             bottom_category_revenue = category_group.min()
             insights.append(
@@ -254,7 +219,7 @@ def generate_insights(df):
         return [f"Не вдалося згенерувати інсайти: {e}"]
 
 
-# --- ↓↓↓ ОНОВЛЕНИЙ ГОЛОВНИЙ API ENDPOINT ↓↓↓ ---
+# --- ГОЛОВНИЙ API ENDPOINT (ОСТАТОЧНА ВЕРСІЯ) ---
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -280,22 +245,18 @@ def upload_file():
             try:
                 if 'Transaction_Date' in df_final.columns:
                     df_final['Transaction_Date'] = pd.to_datetime(df_final['Transaction_Date'], errors='coerce')
-
-                # Примітка: Ми застосовуємо 'ignore' для .astype(), тому що
-                # Revenue' та 'Profit' ще не існують. Вони будуть створені в generate_insights
                 df_final = df_final.astype(TABLEAU_SCHEMA, errors='ignore')
             except Exception as e:
                 print(f"!! Помилка при застосуванні схеми .astype(): {e}")
 
-            # 3. Генеруємо інсайти ТА РОЗРАХОВУЄМО PROFIT/REVENUE
-            #    ↓↓↓ ВИДАЛЕНО .copy() ↓↓↓
+            # 3. Генеруємо інсайти ТА ЗАПОВНЮЄМО 'Cost_Per_Unit'
             insights = generate_insights(df_final)
 
             # 4. Зберігаємо файл ТИМЧАСОВО у .hyper форматі
             temp_file_path = os.path.join('temp_cleaned_data.hyper')
             print(f"Конвертую дані у {temp_file_path}...")
 
-            # Тепер df_final МІСТИТЬ розраховані 'Revenue' та 'Profit'
+            # ВАЖЛИВО: Ми передаємо df_final (який тепер має ЗАПОВНЕНИЙ Cost_Per_Unit)
             pt.frame_to_hyper(df_final, temp_file_path, table='Extract')
 
             # 5. Викликаємо нашу функцію для завантаження в хмару
