@@ -67,33 +67,60 @@ def get_smart_category(dirty_category):
         return 'default'
 
 
-# --- Функція Публікації (Без змін) ---
+
+
+
+# --- ФУНКЦІЯ ПУБЛІКАЦІЇ (з Примусовим Оновленням) ---
 def publish_to_tableau_cloud(file_path):
+    """
+    Підключається до Tableau Cloud, перезаписує джерело
+    і ПРИМУСОВО його оновлює.
+    """
     try:
         server_url = os.environ['TABLEAU_SERVER_URL']
         site_id = os.environ['TABLEAU_SITE_ID']
         pat_name = os.environ['TABLEAU_PAT_NAME']
         pat_secret = os.environ['TABLEAU_PAT_SECRET']
         datasource_name_to_update = 'live_sales_data'
+
         print(f"Підключення до {server_url} на сайті {site_id}...")
+
         tableau_auth = TSC.PersonalAccessTokenAuth(pat_name, pat_secret, site_id=site_id)
         server = TSC.Server(server_url, use_server_version=True)
+
         with server.auth.sign_in(tableau_auth):
             print("Успішний вхід в Tableau Cloud.")
+
             req_option = TSC.RequestOptions()
             req_option.filter.add(TSC.Filter(TSC.RequestOptions.Field.Name,
                                              TSC.RequestOptions.Operator.Equals,
                                              datasource_name_to_update))
             all_datasources, _ = server.datasources.get(req_option)
+
             if not all_datasources:
                 error_msg = f"Помилка: Джерело даних з ім'ям '{datasource_name_to_update}' не знайдено."
                 print(f"!! {error_msg}")
                 return error_msg
+
             datasource_to_update = all_datasources[0]
             print(f"Джерело даних знайдено (ID: {datasource_to_update.id}). Публікую нову версію...")
+
+            # Крок 1: Публікуємо (перезаписуємо) файл
             updated_datasource = server.datasources.publish(datasource_to_update, file_path, 'Overwrite')
-            print(f"Джерело даних '{updated_datasource.name}' успішно оновлено.")
-            return None
+            print(f"Джерело даних '{updated_datasource.name}' опубліковано.")
+
+            # --- ↓↓↓ ОСЬ ВИПРАВЛЕННЯ! ↓↓↓ ---
+            # Крок 2: Примусово "освіжаємо" джерело даних
+            print("Запускаю примусове оновлення (refresh) джерела...")
+            try:
+                server.datasources.refresh(datasource_to_update)
+                print("Примусове оновлення (refresh) успішно запущено.")
+            except Exception as e:
+                print(f"!! Помилка під час запуску 'refresh', але це не критично: {e}")
+            # --- ↑↑↑ КІНЕЦЬ ВИПРАВЛЕННЯ ---
+
+            return None  # <-- Успіх!
+
     except TSC.ServerResponseError as e:
         error_msg = f"Помилка Tableau API: {e.summary} - {e.detail}"
         print(f"!! {error_msg}")
@@ -102,7 +129,6 @@ def publish_to_tableau_cloud(file_path):
         error_msg = f"Критична помилка Python: {str(e)}"
         print(f"!! {error_msg}")
         return error_msg
-
 
 # --- Функція Мапінгу (Без змін) ---
 def smart_column_mapping(uploaded_columns):
