@@ -23,8 +23,57 @@ STANDARD_COLUMNS = {
     'Client_Region': ['регіон', 'місто', 'region', 'city', 'client region', 'регіон доставки'],
 }
 
+# --- СХЕМА ДАНИХ (Виправляє помилку "Arrow type: na") ---
+TABLEAU_SCHEMA = {
+    'Transaction_Date': 'datetime64[ns]',
+    'Transaction_ID': 'object',
+    'Product_Category': 'object',
+    'Quantity': 'Int64',
+    'Price_Per_Unit': 'float64',
+    'Cost_Per_Unit': 'float64',
+    'Client_Region': 'object'
+}
 
-# --- Функція Публікації ---
+# --- "РОЗУМНИЙ" СЛОВНИК МАРЖІ (v2) ---
+MARGIN_FALLBACKS_BY_CATEGORY = {
+    'Electronics': 0.20,
+    'Apparel': 0.40,
+    'Home Goods': 0.35,
+    'Food': 0.15,
+    'Automotive': 0.10,
+    'Електроніка': 0.20,
+    'Одяг': 0.40,
+    'Товари для дому': 0.35,
+    'Продукти': 0.15,
+    'default': 0.30
+}
+
+# --- "РОЗУМНА" ФУНКЦІЯ ДЛЯ КАТЕГОРІЙ ---
+CLEAN_CATEGORIES = list(MARGIN_FALLBACKS_BY_CATEGORY.keys())
+
+
+def get_smart_category(dirty_category):
+    """
+    Бере "брудну" назву категорії і знаходить найкращий збіг.
+    """
+    if not isinstance(dirty_category, str):
+        return 'default'
+
+    best_match, score = process.extractOne(
+        dirty_category.lower(),
+        CLEAN_CATEGORIES,
+        scorer=fuzz.token_set_ratio
+    )
+
+    if score > 60:
+        # print(f"Розумний Мапінг Категорій: '{dirty_category}' -> '{best_match}' (Схожість: {score}%)")
+        return best_match
+    else:
+        # print(f"Розумний Мапінг Категорій: '{dirty_category}' -> 'default' (Схожість: {score}%)")
+        return 'default'
+
+
+# --- Функція Публікації (Без змін) ---
 def publish_to_tableau_cloud(file_path):
     """
     Підключається до Tableau Cloud і повертає None у разі успіху,
@@ -62,22 +111,24 @@ def publish_to_tableau_cloud(file_path):
             updated_datasource = server.datasources.publish(datasource_to_update, file_path, 'Overwrite')
 
             print(f"Джерело даних '{updated_datasource.name}' успішно оновлено.")
-            return None  # <-- Успіх! Повертаємо None
+            return None
 
     except TSC.ServerResponseError as e:
-        # Ловимо специфічну помилку Tableau
         error_msg = f"Помилка Tableau API: {e.summary} - {e.detail}"
         print(f"!! {error_msg}")
         return error_msg
     except Exception as e:
-        # Ловимо всі інші помилки
         error_msg = f"Критична помилка Python: {str(e)}"
         print(f"!! {error_msg}")
         return error_msg
 
 
-# --- Функція Мапінгу ---
+# --- ↓↓↓ ФУНКЦІЯ, ЯКОЇ НЕ ВИСТАЧАЛО ↓↓↓ ---
+# --- Функція Мапінгу (Без змін) ---
 def smart_column_mapping(uploaded_columns):
+    """
+    Бере "брудні" назви стовпців і знаходить найкращий збіг.
+    """
     mapping = {}
     all_standard_options = []
     for standard_name, variations in STANDARD_COLUMNS.items():
@@ -98,62 +149,7 @@ def smart_column_mapping(uploaded_columns):
     return mapping
 
 
-# --- Функція Інсайтів ---
-def generate_insights(df):
-    insights = []
-    try:
-        # --- Підготовка даних ---
-        df['Price_Per_Unit'] = pd.to_numeric(df['Price_Per_Unit'], errors='coerce')
-        df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
-        df.dropna(subset=['Price_Per_Unit', 'Quantity'], inplace=True)
-
-        df['Revenue'] = df['Price_Per_Unit'] * df['Quantity']
-
-        total_revenue = df['Revenue'].sum()
-        total_transactions = df['Transaction_ID'].nunique()
-
-        # --- ОПИСОВІ ІНСАЙТИ ---
-        insights.append(
-            f"✅ Проаналізовано {total_transactions} унікальних транзакцій на загальну суму {total_revenue:,.2f} грн.")
-
-        aov = 0
-        if total_transactions > 0:
-            aov = total_revenue / total_transactions
-            insights.append(f"📈 Середній чек (AOV) у цьому наборі даних становить {aov:,.2f} грн.")
-
-        if 'Product_Category' in df.columns:
-            category_group = df.groupby('Product_Category')['Revenue'].sum().sort_values(ascending=False)
-            top_category_name = category_group.idxmax()
-            top_category_revenue = category_group.max()
-            insights.append(f"🏆 Топ-категорія: '{top_category_name}' з виручкою {top_category_revenue:,.2f} грн.")
-
-        if 'Client_Region' in df.columns:
-            region_group = df.groupby('Client_Region')['Revenue'].sum().sort_values(ascending=False)
-            top_region_name = region_group.idxmax()
-            top_region_revenue = region_group.max()
-            insights.append(f"🌍 Топ-регіон: '{top_region_name}' з виручкою {top_region_revenue:,.2f} грн.")
-
-        # --- 💡 ПРИПИСОВІ РЕКОМЕНДАЦІЇ ---
-        if aov > 0:
-            target_aov = aov * 1.15
-            insights.append(
-                f"💡 **Рекомендація:** Ваш середній чек {aov:,.2f} грн. Спробуйте впровадити поріг безкоштовної доставки (наприклад, від {target_aov:,.2f} грн) або додайте 'cross-sell' товари, щоб заохотити клієнтів купувати більше.")
-
-        if 'Product_Category' in df.columns and len(category_group) > 1:
-            bottom_category_name = category_group.idxmin()
-            bottom_category_revenue = category_group.min()
-            insights.append(
-                f"📉 **Рекомендація:** Категорія '{bottom_category_name}' приносить найменше доходу ({bottom_category_revenue:,.2f} грн). Розгляньте можливість проведення цільової промо-акції для неї або проаналізуйте її асортимент, щоб підвищити привабливість.")
-
-        return insights
-
-    except Exception as e:
-        print(f"Помилка генерації інсайтів: {e}")
-        return ["Не вдалося автоматично згенерувати інсайти для цього файлу."]
-
-
-# --- ГОЛОВНИЙ API ENDPOINT ---
-# --- ФІНАЛЬНА ФУНКЦІЯ ІНСАЙТІВ (з Імп'ютацією Собівартості) ---
+# --- ФІНАЛЬНА ВЕРСІЯ: ФУНКЦІЯ ІНСАЙТІВ (ВИКОРИСТОВУЄ get_smart_category) ---
 def generate_insights(df):
     insights = []
     try:
@@ -166,30 +162,36 @@ def generate_insights(df):
 
         df['Revenue'] = df['Price_Per_Unit'] * df['Quantity']
 
-        # --- 2. ↓↓↓ НОВА ЛОГІКА: "РОЗУМНА" ІМП'ЮТАЦІЯ СОБІВАРТОСТІ ↓↓↓ ---
-        profit_warning = None
+        # --- 2. РОЗУМНА ІМП'ЮТАЦІЯ СОБІВАРТОСТІ (v4) ---
 
-        # Перевіряємо, чи є у нас стовпець (ми його створили раніше, але він може бути порожнім)
         if 'Cost_Per_Unit' in df.columns:
             nan_count = df['Cost_Per_Unit'].isnull().sum()
             total_count = len(df)
 
             if nan_count == total_count:
-                # СЦЕНАРІЙ Б: Стовпець повністю порожній. Використовуємо fallback 30% маржі.
-                fallback_margin = 0.30  # 30%
-                fallback_cost_ratio = 1 - fallback_margin  # 70%
+                # СЦЕНАРІЙ Б: Стовпець повністю порожній.
 
-                print("Імп'ютація: Cost_Per_Unit повністю відсутній. Застосовую fallback 70% COGS.")
-                df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * fallback_cost_ratio, inplace=True)
+                if 'Product_Category' not in df.columns:
+                    fallback_margin = MARGIN_FALLBACKS_BY_CATEGORY['default']
+                    df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * (1 - fallback_margin), inplace=True)
+                    insights.append(
+                        f"⚠️ **Увага:** Собівартість (`Cost_Per_Unit`) ТА Категорії (`Product_Category`) відсутні. Для розрахунку прибутку була застосована **загальна теоретична маржа у {fallback_margin:.0%}**.")
+                else:
+                    # Ура! У нас є категорії. Використовуємо "РОЗУМНУ" ФУНКЦІЮ
+                    print("Імп'ютація: Cost_Per_Unit повністю відсутній. Застосовую 'розумну' маржу за категоріями...")
 
-                insights.append(
-                    f"⚠️ **Увага:** Дані про собівартість (`Cost_Per_Unit`) були відсутні. Для розрахунку прибутку була автоматично застосована **теоретична маржа у 30%**.")
+                    df['Cost_Per_Unit'] = df.apply(
+                        lambda row: row['Price_Per_Unit'] * (
+                                    1 - MARGIN_FALLBACKS_BY_CATEGORY[get_smart_category(row['Product_Category'])]),
+                        axis=1
+                    )
+
+                    insights.append(
+                        f"⚠️ **Увага:** Собівартість (`Cost_Per_Unit`) була відсутня. Прибуток розраховано **на основі 'розумного' зіставлення категорій** (напр., 'gadgets' -> 'Electronics').")
 
             elif nan_count > 0:
-                # СЦЕНАРІЙ A: Стовпець частково порожній. Розраховуємо середню маржу з наявних даних.
+                # СЦЕНАРІЙ A: Стовпець частково порожній.
                 print("Імп'ютація: Cost_Per_Unit частково відсутній. Розраховую середню маржу...")
-
-                # Розраховуємо маржу тільки на "хороших" рядках
                 good_data = df.dropna(subset=['Cost_Per_Unit', 'Price_Per_Unit'])
                 avg_margin_ratio = (good_data['Price_Per_Unit'] - good_data['Cost_Per_Unit']).sum() / good_data[
                     'Price_Per_Unit'].sum()
@@ -200,14 +202,15 @@ def generate_insights(df):
                     insights.append(
                         f"ℹ️ **Інформація:** {nan_count} транзакцій не мали собівартості. До них була автоматично застосована **середня розрахована маржа ({avg_margin_ratio:.1%})** з цього файлу.")
                 else:
-                    # Не змогли розрахувати середню (можливо, Price=0), використовуємо fallback
                     df['Cost_Per_Unit'].fillna(df['Price_Per_Unit'] * (1 - 0.30), inplace=True)
                     insights.append(
                         f"⚠️ **Увага:** Не вдалося розрахувати середню маржу. Для {nan_count} транзакцій була застосована **теоретична маржа у 30%**.")
 
         # --- 3. ПЕРЕРАХУНОК ПРИБУТКУ ПІСЛЯ ІМП'ЮТАЦІЇ ---
-        # Тепер, коли Cost_Per_Unit заповнений, ми можемо розрахувати Прибуток для всіх
-        df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
+        if 'Cost_Per_Unit' in df.columns:
+            df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
+        else:
+            df['Profit'] = float('nan')  # Якщо собівартості все ще немає, робимо прибуток порожнім
 
         # --- 4. Продовжуємо Аналіз (з тими даними, що є) ---
         df_cleaned = df.dropna(subset=['Revenue'])
@@ -222,7 +225,9 @@ def generate_insights(df):
             insights.append(f"📈 Середній чек (AOV) у цьому наборі даних становить {aov:,.2f} грн.")
 
         if 'Product_Category' in df_cleaned.columns:
-            category_group = df_cleaned.groupby('Product_Category')['Revenue'].sum().sort_values(ascending=False)
+            df_cleaned['Clean_Category'] = df_cleaned['Product_Category'].apply(get_smart_category)
+            category_group = df_cleaned.groupby('Clean_Category')['Revenue'].sum().sort_values(ascending=False)
+
             top_category_name = category_group.idxmax()
             top_category_revenue = category_group.max()
             insights.append(f"🏆 Топ-категорія: '{top_category_name}' з виручкою {top_category_revenue:,.2f} грн.")
@@ -237,13 +242,13 @@ def generate_insights(df):
         if aov > 0:
             target_aov = aov * 1.15
             insights.append(
-                f"💡 **Рекомендація:** Ваш середній чек {aov:,.2f} грн. Спробуйте впровадити поріг безкоштовної доставки...")  # (і т.д.)
+                f"💡 **Рекомендація:** Ваш середній чек {aov:,.2f} грн. Спробуйте впровадити поріг безкоштовної доставки...")
 
         if 'Product_Category' in df_cleaned.columns and len(category_group) > 1:
             bottom_category_name = category_group.idxmin()
             bottom_category_revenue = category_group.min()
             insights.append(
-                f"📉 **Рекомендація:** Категорія '{bottom_category_name}' приносить найменше доходу ({bottom_category_revenue:,.2f} грн)...")  # (і т.д.)
+                f"📉 **Рекомендація:** Категорія '{bottom_category_name}' приносить найменше доходу ({bottom_category_revenue:,.2f} грн)...")
 
         return insights
 
@@ -252,7 +257,70 @@ def generate_insights(df):
         return [f"Не вдалося згенерувати інсайти: {e}"]
 
 
+# --- ↓↓↓ ГОЛОВНИЙ API ENDPOINT (ЯКОГО НЕ ВИСТАЧАЛО) ↓↓↓ ---
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "Файл не знайдено"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "Файл не обрано"}), 400
+
+    if file and file.filename.endswith('.csv'):
+        try:
+            df = pd.read_csv(file)
+
+            # ВИКЛИКАЄМО "РОЗУМНИЙ МЕПІНГ" (який був відсутній)
+            column_mapping = smart_column_mapping(df.columns.tolist())
+            df.rename(columns=column_mapping, inplace=True)
+
+            # 1. Гарантуємо, що ВСІ стовпці існують
+            all_standard_keys = list(STANDARD_COLUMNS.keys())
+            df_standard = pd.DataFrame(columns=all_standard_keys)
+            final_columns = [col for col in all_standard_keys if col in df.columns]
+            df_final = pd.concat([df_standard, df[final_columns]], sort=False)
+
+            # 2. ПРИМУСОВЕ ЗАСТОСУВАННЯ ТИПІВ ДАНИХ (Виправляє "Arrow type: na")
+            print("Примусово застосовую типи даних...")
+            try:
+                if 'Transaction_Date' in df_final.columns:
+                    df_final['Transaction_Date'] = pd.to_datetime(df_final['Transaction_Date'], errors='coerce')
+                df_final = df_final.astype(TABLEAU_SCHEMA, errors='ignore')
+            except Exception as e:
+                print(f"!! Помилка при застосуванні схеми .astype(): {e}")
+
+            # 3. Генеруємо інсайти (використовуючи "розумну" імп'ютацію)
+            insights = generate_insights(df_final.copy())  # .copy() щоб уникнути помилок
+
+            # 4. Зберігаємо файл ТИМЧАСОВО у .hyper форматі
+            temp_file_path = os.path.join('temp_cleaned_data.hyper')
+            print(f"Конвертую дані у {temp_file_path}...")
+
+            pt.frame_to_hyper(df_final, temp_file_path, table='Extract')
+
+            # 5. Викликаємо нашу функцію для завантаження в хмару
+            print("Запускаю оновлення даних в Tableau Cloud...")
+            tableau_error = publish_to_tableau_cloud(temp_file_path)
+
+            # 6. Видаляємо тимчасовий файл
+            os.remove(temp_file_path)
+
+            # 7. Перевіряємо, чи є помилка
+            if tableau_error:
+                insights.append(f"ПОМИЛКА TABLEAU: {tableau_error}")
+
+            # 8. Повертаємо інсайти
+            return jsonify({
+                "message": "Файл успішно завантажено та відправлено в Tableau Cloud!",
+                "insights": insights
+            }), 200
+
+        except Exception as e:
+            return jsonify({"error": f"Помилка обробки файлу: {str(e)}"}), 500
+    else:
+        return jsonify({"error": "Невірний тип файлу. Потрібен .csv"}), 400
+
+
 # --- Запуск сервера ---
 if __name__ == '__main__':
-    # Gunicorn буде використовувати цей 'app'
     app.run()
