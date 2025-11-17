@@ -3,14 +3,16 @@ import pandas as pd
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from fuzzywuzzy import fuzz, process
-import tableauserverclient as TSC  # <-- НОВА БІБЛІОТЕКА
+import tableauserverclient as TSC
+import pantab as pt
+from tableauhyperapi import TableName
 
 # --- Налаштування Сервера ---
 app = Flask(__name__)
-# Автоматично бере URL вашого Vercel з Render Environment
+# Цей рядок правильний, він жорстко прописує твій Vercel URL
 CORS(app, resources={r"/api/*": {"origins": "https://my-diploma-project.vercel.app"}})
 
-# --- Наша Стандартна Модель Даних ---
+# --- Стандартна Модель Даних ---
 STANDARD_COLUMNS = {
     'Transaction_Date': ['дата', 'дата замовлення', 'date', 'order_date'],
     'Transaction_ID': ['id', 'номер замовлення', 'transaction id', 'order id', 'номер чека'],
@@ -22,7 +24,7 @@ STANDARD_COLUMNS = {
 }
 
 
-# --- НОВА ВЕРСІЯ ФУНКЦІЇ (З ДЕТАЛЬНИМИ ПОМИЛКАМИ) ---
+# --- Функція Публікації ---
 def publish_to_tableau_cloud(file_path):
     """
     Підключається до Tableau Cloud і повертає None у разі успіху,
@@ -33,7 +35,7 @@ def publish_to_tableau_cloud(file_path):
         site_id = os.environ['TABLEAU_SITE_ID']
         pat_name = os.environ['TABLEAU_PAT_NAME']
         pat_secret = os.environ['TABLEAU_PAT_SECRET']
-        datasource_name_to_update = 'live_sales_data'  # Переконайся, що ім'я правильне
+        datasource_name_to_update = 'live_sales_data'
 
         print(f"Підключення до {server_url} на сайті {site_id}...")
 
@@ -73,9 +75,9 @@ def publish_to_tableau_cloud(file_path):
         print(f"!! {error_msg}")
         return error_msg
 
-# ... (Ваша функція `smart_column_mapping` залишається тут) ...
+
+# --- Функція Мапінгу ---
 def smart_column_mapping(uploaded_columns):
-    # ... (код без змін) ...
     mapping = {}
     all_standard_options = []
     for standard_name, variations in STANDARD_COLUMNS.items():
@@ -96,49 +98,61 @@ def smart_column_mapping(uploaded_columns):
     return mapping
 
 
-# ... (Ваша функція `generate_insights` залишається тут) ...
+# --- Функція Інсайтів ---
 def generate_insights(df):
-    # ... (код без змін) ...
     insights = []
     try:
+        # --- Підготовка даних ---
         df['Price_Per_Unit'] = pd.to_numeric(df['Price_Per_Unit'], errors='coerce')
         df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
         df.dropna(subset=['Price_Per_Unit', 'Quantity'], inplace=True)
+
         df['Revenue'] = df['Price_Per_Unit'] * df['Quantity']
+
         total_revenue = df['Revenue'].sum()
         total_transactions = df['Transaction_ID'].nunique()
+
+        # --- ОПИСОВІ ІНСАЙТИ ---
         insights.append(
             f"✅ Проаналізовано {total_transactions} унікальних транзакцій на загальну суму {total_revenue:,.2f} грн.")
+
         aov = 0
         if total_transactions > 0:
             aov = total_revenue / total_transactions
             insights.append(f"📈 Середній чек (AOV) у цьому наборі даних становить {aov:,.2f} грн.")
+
         if 'Product_Category' in df.columns:
             category_group = df.groupby('Product_Category')['Revenue'].sum().sort_values(ascending=False)
             top_category_name = category_group.idxmax()
             top_category_revenue = category_group.max()
             insights.append(f"🏆 Топ-категорія: '{top_category_name}' з виручкою {top_category_revenue:,.2f} грн.")
+
         if 'Client_Region' in df.columns:
             region_group = df.groupby('Client_Region')['Revenue'].sum().sort_values(ascending=False)
             top_region_name = region_group.idxmax()
             top_region_revenue = region_group.max()
             insights.append(f"🌍 Топ-регіон: '{top_region_name}' з виручкою {top_region_revenue:,.2f} грн.")
+
+        # --- 💡 ПРИПИСОВІ РЕКОМЕНДАЦІЇ ---
         if aov > 0:
             target_aov = aov * 1.15
             insights.append(
                 f"💡 **Рекомендація:** Ваш середній чек {aov:,.2f} грн. Спробуйте впровадити поріг безкоштовної доставки (наприклад, від {target_aov:,.2f} грн) або додайте 'cross-sell' товари, щоб заохотити клієнтів купувати більше.")
+
         if 'Product_Category' in df.columns and len(category_group) > 1:
             bottom_category_name = category_group.idxmin()
             bottom_category_revenue = category_group.min()
             insights.append(
                 f"📉 **Рекомендація:** Категорія '{bottom_category_name}' приносить найменше доходу ({bottom_category_revenue:,.2f} грн). Розгляньте можливість проведення цільової промо-акції для неї або проаналізуйте її асортимент, щоб підвищити привабливість.")
+
         return insights
+
     except Exception as e:
         print(f"Помилка генерації інсайтів: {e}")
         return ["Не вдалося автоматично згенерувати інсайти для цього файлу."]
 
 
-# --- ОНОВЛЕНИЙ API ENDPOINT ---
+# --- ГОЛОВНИЙ API ENDPOINT ---
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -161,24 +175,27 @@ def upload_file():
             else:
                 insights = ["Аналіз неможливий: відсутні стовпці 'Price_Per_Unit' або 'Quantity'."]
 
-            # --- НОВА ЛОГІКА ---
-            # 1. Зберігаємо файл ТИМЧАСОВО на сервері Render
-            # (Render має тимчасову файлову систему)
-            temp_file_path = os.path.join('temp_cleaned_data.csv')
-            df_final.to_csv(temp_file_path, index=False)
+            # 1. Зберігаємо файл ТИМЧАСОВО у .hyper форматі
+            temp_file_path = os.path.join('temp_cleaned_data.hyper')  # <-- Змінили .csv на .hyper
+            print(f"Конвертую дані у {temp_file_path}...")
 
-            # 2. Викликаємо нашу нову функцію для завантаження в хмару
+            # 'Extract' - це стандартна назва таблиці, яку Tableau очікує.
+            pt.frame_to_hyper(df_final, temp_file_path, table='Extract')  # <-- Замінили .to_csv на pantab
+
+            # 2. Викликаємо нашу функцію для завантаження в хмару
             print("Запускаю оновлення даних в Tableau Cloud...")
-            success = publish_to_tableau_cloud(temp_file_path)
+            # Функція тепер повертає None або рядок з помилкою
+            tableau_error = publish_to_tableau_cloud(temp_file_path)
 
             # 3. Видаляємо тимчасовий файл
             os.remove(temp_file_path)
 
-            if not success:
-                # Якщо API Tableau дав збій, повертаємо помилку
-                insights.append("ПОМИЛКА: Не вдалося оновити джерело даних в Tableau Cloud.")
+            # 4. Перевіряємо, чи є помилка
+            if tableau_error:
+                # Якщо функція повернула помилку, додаємо її до "інсайтів"
+                insights.append(f"ПОМИЛКА TABLEAU: {tableau_error}")
 
-            # 4. Повертаємо інсайти
+            # 5. Повертаємо інсайти
             return jsonify({
                 "message": "Файл успішно завантажено та відправлено в Tableau Cloud!",
                 "insights": insights
