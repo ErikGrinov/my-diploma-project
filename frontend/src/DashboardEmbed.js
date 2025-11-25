@@ -1,24 +1,28 @@
 import React from 'react';
 
-// 1. Приймаємо "ключ оновлення"
 const DashboardEmbed = ({ refreshKey }) => {
 
-  // 2. Це наше базове посилання на дашборд
-  const baseUrl = 'https://dub01.online.tableau.com/t/erikgriniov1-3be6b7b2f9/views/Diploma/Dashboard1?:embed=y&:showVizHome=no&:toolbar=no&:tabs=no';
+  // 1. Базове посилання (БЕЗ знаків питання в кінці)
+  const baseUrl = 'https://dub01.online.tableau.com/t/erikgriniov1-3be6b7b2f9/views/Diploma/Dashboard1';
 
-  // 3. Ми "обманюємо" iframe, додаючи до URL фіктивний параметр,
-  // який змінюється. Коли URL змінюється, iframe ПРИМУСОВО
-  // перезавантажується і завантажує НОВІ дані.
-  const tableauEmbedUrl = refreshKey 
-    ? `${baseUrl}&:refresh_key=${refreshKey}` 
-    : baseUrl;
+  // 2. Формуємо "Ядерний URL"
+  //    ?:embed=yes       -> Вмикає режим вбудовування
+  //    &:refresh=yes     -> НАКАЗУЄ Tableau ігнорувати кеш і взяти свіжі дані
+  //    &:ts=${refreshKey} -> НАКАЗУЄ Браузеру вважати це новою сторінкою (timestamp)
+  
+  // Використовуємо поточний час, якщо refreshKey ще немає
+  const currentTimestamp = refreshKey || new Date().getTime();
+  
+  const finalUrl = `${baseUrl}?:embed=yes&:showVizHome=no&:toolbar=no&:tabs=no&:refresh=yes&:ts=${currentTimestamp}`;
+
+  console.log("Завантажую дашборд з URL:", finalUrl);
 
   return (
     <div className="dashboard-container">
       <h2>Інтерактивний Дашборд</h2>
 
       <iframe
-        src={tableauEmbedUrl} // <-- Використовуємо наш новий URL
+        src={finalUrl}
         width="100%"
         height="827"
         frameBorder="0"
