@@ -64,8 +64,8 @@ def get_smart_category(dirty_category):
 # --- ФУНКЦІЯ ПУБЛІКАЦІЇ (з Примусовим Оновленням КНИГИ) ---
 def publish_to_tableau_cloud(file_path):
     """
-    Підключається до Tableau Cloud, перезаписує джерело
-    і ПРИМУСОВО оновлює книгу (дашборд), яка його використовує.
+    Підключається до Tableau Cloud і перезаписує джерело.
+    Дашборд, який підключено 'Наживо', оновиться сам.
     """
     try:
         server_url = os.environ['TABLEAU_SERVER_URL']
@@ -73,7 +73,6 @@ def publish_to_tableau_cloud(file_path):
         pat_name = os.environ['TABLEAU_PAT_NAME']
         pat_secret = os.environ['TABLEAU_PAT_SECRET']
         datasource_name_to_update = 'live_sales_data'
-        workbook_name_to_refresh = 'Diploma'  # <-- Назва твого дашборда
 
         print(f"Підключення до {server_url} на сайті {site_id}...")
 
@@ -83,11 +82,10 @@ def publish_to_tableau_cloud(file_path):
         with server.auth.sign_in(tableau_auth):
             print("Успішний вхід в Tableau Cloud.")
 
-            # --- Крок 1: Знаходимо Джерело Даних ---
             req_option_ds = TSC.RequestOptions()
             req_option_ds.filter.add(TSC.Filter(TSC.RequestOptions.Field.Name,
-                                                TSC.RequestOptions.Operator.Equals,
-                                                datasource_name_to_update))
+                                             TSC.RequestOptions.Operator.Equals,
+                                             datasource_name_to_update))
             all_datasources, _ = server.datasources.get(req_option_ds)
 
             if not all_datasources:
@@ -98,37 +96,13 @@ def publish_to_tableau_cloud(file_path):
             datasource_to_update = all_datasources[0]
             print(f"Джерело даних знайдено (ID: {datasource_to_update.id}). Публікую нову версію...")
 
-            # --- Крок 2: Публікуємо (перезаписуємо) файл ---
+            # Публікуємо (перезаписуємо) файл
             updated_datasource = server.datasources.publish(datasource_to_update, file_path, 'Overwrite')
             print(f"Джерело даних '{updated_datasource.name}' опубліковано.")
 
-            # --- ↓↓↓ ОСЬ ФІНАЛЬНЕ ВИПРАВЛЕННЯ! ↓↓↓ ---
-            # Крок 3: Знаходимо Книгу (Дашборд) і примусово її "освіжаємо"
-            print(f"Шукаю книгу '{workbook_name_to_refresh}' для оновлення...")
-            req_option_wb = TSC.RequestOptions()
-            req_option_wb.filter.add(TSC.Filter(TSC.RequestOptions.Field.Name,
-                                                TSC.RequestOptions.Operator.Equals,
-                                                workbook_name_to_refresh))
-            all_workbooks, _ = server.workbooks.get(req_option_wb)
+            # Ми прибрали звідси server.workbooks.refresh(), бо він не потрібен
 
-            if not all_workbooks:
-                error_msg = f"Помилка: Книгу (дашборд) з ім'ям '{workbook_name_to_refresh}' не знайдено."
-                print(f"!! {error_msg}")
-                return error_msg  # Повертаємо помилку, якщо не знайшли дашборд
-
-            workbook_to_refresh = all_workbooks[0]
-            print(f"Книгу знайдено (ID: {workbook_to_refresh.id}). Запускаю примусове оновлення (refresh)...")
-
-            try:
-                # Цей рядок "наказує" Tableau негайно оновити дашборд
-                server.workbooks.refresh(workbook_to_refresh)
-                print("Примусове оновлення (refresh) книги успішно запущено.")
-            except Exception as e:
-                print(f"!! Помилка під час запуску 'refresh' на книзі: {e}")
-                return str(e)  # Повертаємо помилку
-            # --- ↑↑↑ КІНЕЦЬ ВИПРАВЛЕННЯ ---
-
-            return None  # <-- Успіх!
+            return None # <-- Успіх!
 
     except TSC.ServerResponseError as e:
         error_msg = f"Помилка Tableau API: {e.summary} - {e.detail}"
