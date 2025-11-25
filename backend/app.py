@@ -164,12 +164,37 @@ def generate_insights(df):
                     df.loc[nan_mask, 'Cost_Per_Unit'] = df.loc[nan_mask, 'Price_Per_Unit'] * 0.7
                     insights.append(f"ℹ️ Для {nan_count} записів застосовано маржу 30%.")
 
-        # Profit
-        df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
+                # 3. Розрахунок Profit
+            if 'Cost_Per_Unit' in df.columns:
+                df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
+            else:
+                df['Profit'] = float('nan')
 
-        # Проста аналітика
-        total_rev = df['Revenue'].sum()
-        insights.append(f"✅ Виручка: {total_rev:,.2f} грн.")
+                # 4. Аналітика
+            df_cleaned = df.dropna(subset=['Revenue'])
+            total_revenue = df_cleaned['Revenue'].sum()
+            total_transactions = df_cleaned['Transaction_ID'].nunique()
+            insights.append(f"✅ Проаналізовано {total_transactions} транзакцій на суму {total_revenue:,.2f} грн.")
+
+            aov = 0
+            if total_transactions > 0:
+                aov = total_revenue / total_transactions
+                insights.append(f"📈 Середній чек (AOV): {aov:,.2f} грн.")
+
+            # Топ категорія (спрощено для швидкості)
+            if 'Product_Category' in df_cleaned.columns:
+                cat_group = df_cleaned.groupby('Product_Category')['Revenue'].sum().sort_values(ascending=False)
+                if not cat_group.empty:
+                    insights.append(f"🏆 Топ-категорія: '{cat_group.idxmax()}' ({cat_group.max():,.2f} грн).")
+
+            if 'Client_Region' in df_cleaned.columns and df_cleaned['Client_Region'].notna().any():
+                reg_group = df_cleaned.groupby('Client_Region')['Revenue'].sum().sort_values(ascending=False)
+                if not reg_group.empty:
+                    insights.append(f"🌍 Топ-регіон: '{reg_group.idxmax()}' ({reg_group.max():,.2f} грн).")
+
+            if aov > 0:
+                target_aov = aov * 1.15
+                insights.append(f"💡 **Рекомендація:** Підніміть середній чек до {target_aov:,.2f} грн.")
 
         return insights
 
@@ -224,7 +249,7 @@ def upload_file():
             temp_file_path = 'temp.hyper'
             print(f"Конвертую у {temp_file_path}...")
 
-            # ВАЖЛИВО: Видаляємо старий файл якщо є
+            # Видаляємо старий файл якщо є
             if os.path.exists(temp_file_path): os.remove(temp_file_path)
 
             # Примусова очистка пам'яті перед конвертацією
