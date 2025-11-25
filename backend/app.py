@@ -19,18 +19,17 @@ STANDARD_COLUMNS = {
                        'receipt_id'],
     'Product_Category': ['категорія', 'category', 'product category', 'категорія товару', 'article', 'item_group'],
     'Quantity': ['кількість', 'quantity', 'qty', 'кіл-ть', 'pieces'],
-    'Price_Per_Unit': ['ціна', 'price', 'ціна за од', 'unit_price', 'amount', 'Price per Unit'],
+    'Price_Per_Unit': ['ціна', 'price', 'ціна за од', 'unit_price', 'amount'],
     'Cost_Per_Unit': ['собівартість', 'cost', 'cost per unit'],
     'Client_Region': ['регіон', 'місто', 'region', 'city', 'client region', 'регіон доставки'],
 }
 
-
-# Використовуємо float64 для Quantity, щоб уникнути проблем з пам'яттю та типами
+# --- СХЕМА ДАНИХ ---
 TABLEAU_SCHEMA = {
     'Transaction_Date': 'datetime64[ns]',
-    'Transaction_ID': 'string',  # Використовуємо 'string' замість 'object'
-    'Product_Category': 'string',  # Використовуємо 'string'
-    'Quantity': 'float64',  # float64 легше для pantab
+    'Transaction_ID': 'string',
+    'Product_Category': 'string',
+    'Quantity': 'float64',
     'Price_Per_Unit': 'float64',
     'Cost_Per_Unit': 'float64',
     'Client_Region': 'string',
@@ -53,7 +52,6 @@ def get_smart_category(dirty_category):
     if pd.isna(dirty_category) or str(dirty_category).strip() == "":
         return 'default'
 
-    # Оптимізація: якщо вже є точний збіг
     dirty_str = str(dirty_category)
     if dirty_str in MARGIN_FALLBACKS_BY_CATEGORY:
         return dirty_str
@@ -126,86 +124,118 @@ def smart_column_mapping(uploaded_columns):
     return mapping
 
 
+# --- ФУНКЦІЯ ІНСАЙТІВ  ---
 def generate_insights(df):
     insights = []
     try:
-        # Конвертуємо числові поля
-        cols_to_numeric = ['Price_Per_Unit', 'Quantity', 'Cost_Per_Unit']
-        for col in cols_to_numeric:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
+        # 1. Типізація
+        df['Price_Per_Unit'] = pd.to_numeric(df['Price_Per_Unit'], errors='coerce')
+        df['Quantity'] = pd.to_numeric(df['Quantity'], errors='coerce')
+        if 'Cost_Per_Unit' in df.columns:
+            df['Cost_Per_Unit'] = pd.to_numeric(df['Cost_Per_Unit'], errors='coerce')
 
         df['Revenue'] = df['Price_Per_Unit'] * df['Quantity']
 
-        # Імп'ютація
+        # 2. Імп'ютація
         if 'Cost_Per_Unit' in df.columns:
-            nan_mask = df['Cost_Per_Unit'].isnull()
-            nan_count = nan_mask.sum()
+            nan_count = df['Cost_Per_Unit'].isnull().sum()
+            total_count = len(df)
 
-            if nan_count > 0:
-                if nan_count == len(df):
-                    # Повністю відсутній
-                    if 'Product_Category' in df.columns:
-                        # Оптимізація: map замість apply
-                        unique_cats = df['Product_Category'].astype(str).unique()
-                        cat_margin_map = {}
-                        for cat in unique_cats:
-                            smart_cat = get_smart_category(cat)
-                            cat_margin_map[cat] = 1 - MARGIN_FALLBACKS_BY_CATEGORY.get(smart_cat, 0.30)
+            if nan_count == total_count:
 
-                        df.loc[nan_mask, 'Cost_Per_Unit'] = df.loc[nan_mask, 'Price_Per_Unit'] * df.loc[
-                            nan_mask, 'Product_Category'].astype(str).map(cat_margin_map)
-                        insights.append(f"⚠️ Собівартість відсутня. Розраховано на основі категорій.")
-                    else:
-                        df.loc[nan_mask, 'Cost_Per_Unit'] = df.loc[nan_mask, 'Price_Per_Unit'] * 0.7
-                        insights.append(f"⚠️ Собівартість відсутня. Застосовано маржу 30%.")
+                if 'Product_Category' in df.columns:
+                    # Оптимізований розрахунок
+                    unique_cats = df['Product_Category'].astype(str).unique()
+                    cat_margin_map = {}
+                    for cat in unique_cats:
+                        smart_cat = get_smart_category(cat)
+                        cat_margin_map[cat] = 1 - MARGIN_FALLBACKS_BY_CATEGORY.get(smart_cat, 0.30)
+
+                    df.loc[:, 'Cost_Per_Unit'] = df['Price_Per_Unit'] * df['Product_Category'].astype(str).map(
+                        cat_margin_map)
+
+
+                    insights.append(
+                        f"⚠️ **Увага:** Дані про собівартість товару були повністю відсутні. Прибуток розраховано **автоматично на основі галузевих стандартів маржі** для кожної категорії (наприклад, Електроніка: ~20%, Одяг: ~40%).")
                 else:
-                    # Частково відсутній
-                    df.loc[nan_mask, 'Cost_Per_Unit'] = df.loc[nan_mask, 'Price_Per_Unit'] * 0.7
-                    insights.append(f"ℹ️ Для {nan_count} записів застосовано маржу 30%.")
+                    df.loc[:, 'Cost_Per_Unit'] = df['Price_Per_Unit'] * 0.7
+                    insights.append(
+                        f"⚠️ **Увага:** Собівартість та Категорії відсутні. Для розрахунку прибутку була застосована **загальна теоретична маржа у 30%**.")
 
-                # 3. Розрахунок Profit
-            if 'Cost_Per_Unit' in df.columns:
-                df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
-            else:
-                df['Profit'] = float('nan')
+            elif nan_count > 0:
 
-                # 4. Аналітика
-            df_cleaned = df.dropna(subset=['Revenue'])
-            total_revenue = df_cleaned['Revenue'].sum()
-            total_transactions = df_cleaned['Transaction_ID'].nunique()
-            insights.append(f"✅ Проаналізовано {total_transactions} транзакцій на суму {total_revenue:,.2f} грн.")
+                good_data = df.dropna(subset=['Cost_Per_Unit', 'Price_Per_Unit'])
+                if len(good_data) > 0:
+                    avg_margin = (good_data['Price_Per_Unit'] - good_data['Cost_Per_Unit']).sum() / good_data[
+                        'Price_Per_Unit'].sum()
+                    if 0 < avg_margin < 1:
+                        df.loc[df['Cost_Per_Unit'].isnull(), 'Cost_Per_Unit'] = df['Price_Per_Unit'] * (1 - avg_margin)
+                        insights.append(
+                            f"ℹ️ **Інформація:** {nan_count} транзакцій не мали собівартості. До них була автоматично застосована **середня розрахована маржа ({avg_margin:.1%})** з цього файлу.")
+                    else:
+                        df.loc[df['Cost_Per_Unit'].isnull(), 'Cost_Per_Unit'] = df['Price_Per_Unit'] * 0.7
+                else:
+                    df.loc[df['Cost_Per_Unit'].isnull(), 'Cost_Per_Unit'] = df['Price_Per_Unit'] * 0.7
 
-            aov = 0
-            if total_transactions > 0:
-                aov = total_revenue / total_transactions
-                insights.append(f"📈 Середній чек (AOV): {aov:,.2f} грн.")
+        # 3. Розрахунок Profit
+        if 'Cost_Per_Unit' in df.columns:
+            df['Profit'] = df['Revenue'] - (df['Quantity'] * df['Cost_Per_Unit'])
+        else:
+            df['Profit'] = float('nan')
 
-            # Топ категорія (спрощено для швидкості)
-            if 'Product_Category' in df_cleaned.columns:
-                cat_group = df_cleaned.groupby('Product_Category')['Revenue'].sum().sort_values(ascending=False)
-                if not cat_group.empty:
-                    insights.append(f"🏆 Топ-категорія: '{cat_group.idxmax()}' ({cat_group.max():,.2f} грн).")
+        # 4. Детальна Аналітика
+        df_cleaned = df.dropna(subset=['Revenue'])
+        total_revenue = df_cleaned['Revenue'].sum()
+        total_transactions = df_cleaned['Transaction_ID'].nunique()
+        insights.append(
+            f"✅ Проаналізовано {total_transactions} унікальних транзакцій на загальну суму {total_revenue:,.2f} у.о.")
 
-            if 'Client_Region' in df_cleaned.columns and df_cleaned['Client_Region'].notna().any():
-                reg_group = df_cleaned.groupby('Client_Region')['Revenue'].sum().sort_values(ascending=False)
-                if not reg_group.empty:
-                    insights.append(f"🌍 Топ-регіон: '{reg_group.idxmax()}' ({reg_group.max():,.2f} грн).")
+        aov = 0
+        if total_transactions > 0:
+            aov = total_revenue / total_transactions
+            insights.append(f"📈 Середній чек (AOV) у цьому наборі даних становить {aov:,.2f} у.о.")
 
-            if aov > 0:
-                target_aov = aov * 1.15
-                insights.append(f"💡 **Рекомендація:** Підніміть середній чек до {target_aov:,.2f} грн.")
+        # Топ категорія
+        if 'Product_Category' in df_cleaned.columns:
+            cat_group = df_cleaned.groupby('Product_Category')['Revenue'].sum().sort_values(ascending=False)
+            if not cat_group.empty:
+                top_cat = cat_group.idxmax()
+                top_rev = cat_group.max()
+                insights.append(f"🏆 Топ-категорія: '{top_cat}' з виручкою {top_rev:,.2f} у.о.")
+
+        # Топ регіон
+        if 'Client_Region' in df_cleaned.columns and df_cleaned['Client_Region'].notna().any():
+            reg_group = df_cleaned.groupby('Client_Region')['Revenue'].sum().sort_values(ascending=False)
+            if not reg_group.empty:
+                top_reg = reg_group.idxmax()
+                top_reg_rev = reg_group.max()
+                insights.append(f"🌍 Топ-регіон: '{top_reg}' з виручкою {top_reg_rev:,.2f} у.о.")
+
+        # 5. Розумні рекомендації
+        if aov > 0:
+            target_aov = aov * 1.15
+            insights.append(
+                f"💡 **Рекомендація:** Ваш середній чек {aov:,.2f} у.о. Спробуйте впровадити поріг безкоштовної доставки (наприклад, від {target_aov:,.2f} у.о.) або додайте 'cross-sell' товари, щоб заохотити клієнтів купувати більше.")
+
+        if 'Product_Category' in df_cleaned.columns:
+            cat_group = df_cleaned.groupby('Product_Category')['Revenue'].sum().sort_values(
+                ascending=True)  # Сортуємо за зростанням
+            if not cat_group.empty:
+                worst_cat = cat_group.index[0]
+                worst_rev = cat_group.iloc[0]
+                insights.append(
+                    f"📉 **Рекомендація:** Категорія '{worst_cat}' приносить найменше доходу ({worst_rev:,.2f} у.о.). Розгляньте можливість проведення цільової промо-акції для неї.")
 
         return insights
 
     except Exception as e:
-        print(f"Помилка аналізу: {e}")
-        return ["Помилка аналізу даних."]
+        print(f"Помилка генерації інсайтів: {e}")
+        return [f"Не вдалося згенерувати інсайти (помилка даних)."]
 
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    gc.collect()  # Очищаємо пам'ять перед стартом
+    gc.collect()
 
     if 'file' not in request.files: return jsonify({"error": "Файл не знайдено"}), 400
     file = request.files['file']
@@ -221,38 +251,33 @@ def upload_file():
 
             # Створення структури
             all_keys = list(TABLEAU_SCHEMA.keys())
-            # Створюємо DataFrame одразу з потрібними колонками, щоб уникнути проблем concat
             df_final = pd.DataFrame(index=df.index)
 
             for col in all_keys:
                 if col in df.columns:
                     df_final[col] = df[col]
                 else:
-                    df_final[col] = None  # Створюємо порожні колонки
+                    df_final[col] = None
 
             print("Застосовую типи даних...")
-            # Конвертуємо дати
             if 'Transaction_Date' in df_final.columns:
                 df_final['Transaction_Date'] = pd.to_datetime(df_final['Transaction_Date'], errors='coerce')
 
-            # Застосовуємо типи (Convert to string handled specifically)
             for col, dtype in TABLEAU_SCHEMA.items():
                 if dtype == 'string' or dtype == 'object':
                     df_final[col] = df_final[col].astype('string')
-                elif col != 'Transaction_Date':  # Skip date as it is already handled
+                elif col != 'Transaction_Date':
                     df_final[col] = pd.to_numeric(df_final[col], errors='coerce')
 
             # Інсайти
             insights = generate_insights(df_final)
 
-            # Запис у файл
+            # Запис
             temp_file_path = 'temp.hyper'
             print(f"Конвертую у {temp_file_path}...")
 
-            # Видаляємо старий файл якщо є
             if os.path.exists(temp_file_path): os.remove(temp_file_path)
 
-            # Примусова очистка пам'яті перед конвертацією
             del df
             gc.collect()
 
