@@ -36,7 +36,7 @@ function FileUploader({ onUploadSuccess }) {
     .then((response) => {
       // Успіх
       console.log(response.data);
-      setMessage(`Успіх: ${response.data.message}`);
+      setMessage(`Результат: ${response.data.message}`);
 
       // Зберігаємо інсайти, які прийшли з бекенду
       setInsights(response.data.insights || []);
