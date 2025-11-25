@@ -14,10 +14,10 @@ CORS(app, resources={r"/api/*": {"origins": "https://my-diploma-project.vercel.a
 # --- Стандартна Модель Даних ---
 STANDARD_COLUMNS = {
     'Transaction_Date': ['дата', 'дата замовлення', 'date', 'order_date'],
-    'Transaction_ID': ['id', 'номер замовлення', 'transaction id', 'order id', 'номер чека'],
-    'Product_Category': ['категорія', 'category', 'product category', 'категорія товару'],
+    'Transaction_ID': ['id', 'номер замовлення', 'transaction id', 'order id', 'номер чека', 'ticket_number'],
+    'Product_Category': ['категорія', 'category', 'product category', 'категорія товару', 'article'],
     'Quantity': ['кількість', 'quantity', 'qty', 'кіл-ть'],
-    'Price_Per_Unit': ['ціна', 'price', 'ціна за од'],
+    'Price_Per_Unit': ['ціна', 'price', 'ціна за од', 'unit_price'],
     'Cost_Per_Unit': ['собівартість', 'cost', 'cost per unit'],
     'Client_Region': ['регіон', 'місто', 'region', 'city', 'client region', 'регіон доставки'],
 }
