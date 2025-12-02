@@ -3,7 +3,7 @@ import React from 'react';
 const DashboardEmbed = ({ refreshKey }) => {
 
   // 1. Базове посилання (БЕЗ знаків питання в кінці)
-  const baseUrl = 'https://dub01.online.tableau.com/t/erikgriniov1-3be6b7b2f9/views/Diploma/Dashboard1';
+  const baseUrl = 'https://dub01.online.tableau.com/t/hrynoverik-dfdbf96f2e/views/Diploma/Dashboard1';
 
   // 2. Формуємо "Ядерний URL"
   //    ?:embed=yes       -> Вмикає режим вбудовування
